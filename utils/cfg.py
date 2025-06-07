@@ -8,8 +8,11 @@ class ConfigObject:
         else:
             self.val = val
 
-    def __call__(self):
-        return self.val
+    def __call__(self, val=None):
+        if val is not None:
+            self.val = val
+        else:
+            return self.val
     
     def __str__(self):  
         return str(self.val)

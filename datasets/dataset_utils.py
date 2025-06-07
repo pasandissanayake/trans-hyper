@@ -24,9 +24,11 @@ def make(dataset_spec, args=None):
     return dataset
 
 
-def preprocess_numeric(df, target_col, n_features=5, random_state=42):
+def preprocess_numeric(df, target_col, n_features, random_state=42):
     # Select only numerical features
     numeric_cols = df.drop(columns=[target_col]).select_dtypes(include=['int64', 'float64']).columns
+    if len(numeric_cols) < n_features:
+        raise ValueError(f"Not enough numeric features in the dataset. Found {len(numeric_cols)}, required {n_features}.")
     selected_cols = list(numeric_cols[:n_features])
     
     # Normalize and center

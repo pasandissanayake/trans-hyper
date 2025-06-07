@@ -1,8 +1,9 @@
 # debugging configuration
 debug: true
+debug_datasets: false
 
 # dataset configuration
-dataset_properties:
+datasets:
   data_root: ./data/
 
   adult:
@@ -10,5 +11,5 @@ dataset_properties:
     save_dir: adult
     test_size: 0.2
     validation_size: 0.1
-    n_features: 5
+    n_features: 3
 
