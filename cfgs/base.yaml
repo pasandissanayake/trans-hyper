@@ -13,3 +13,10 @@ datasets:
     validation_size: 0.1
     n_features: 3
 
+  diabetes:
+    name: diabetes
+    save_dir: diabetes
+    test_size: 0.2
+    validation_size: 0.1
+    n_features: 4
+
