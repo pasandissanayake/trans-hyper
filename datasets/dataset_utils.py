@@ -24,7 +24,7 @@ def make(dataset_spec, args=None):
     return dataset
 
 
-def preprocess_numeric(df, target_col, n_features, random_state=42):
+def preprocess_numeric(cfg, df, target_col, n_features, random_state=42):
     # Select only numerical features
     numeric_cols = df.drop(columns=[target_col]).select_dtypes(include=['int64', 'float64']).columns
     if len(numeric_cols) < n_features:

@@ -30,7 +30,9 @@ class AdultDataset:
         df['label'] = y    
         if debug: print(f"Saved dataset to {save_dir}")
         
-        data = preprocess_numeric(df, target_col='label', n_features=n_features)
+        data = preprocess_numeric(cfg, df, target_col='label', n_features=n_features)
         self.train = data['train']
         self.val = data['val']
         self.test = data['test']
+
+        if debug: print(f"Train shape: {self.train.shape}, Val shape: {self.val.shape}, Test shape: {self.test.shape}")

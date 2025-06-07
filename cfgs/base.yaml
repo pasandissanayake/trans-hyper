@@ -5,18 +5,20 @@ debug_datasets: false
 # dataset configuration
 datasets:
   data_root: ./data/
-
+  
   adult:
     name: adult
     save_dir: adult
     test_size: 0.2
     validation_size: 0.1
     n_features: 3
-
+    str_template: "<features>The final weight is {fnlwgt}. The capital gain is {capital_gain} and the capital loss is {capital_loss}.</features><label>{label}</label>"
+    
   diabetes:
     name: diabetes
     save_dir: diabetes
     test_size: 0.2
     validation_size: 0.1
     n_features: 4
+
 

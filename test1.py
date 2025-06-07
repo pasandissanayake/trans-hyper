@@ -37,7 +37,7 @@ def main():
     cfg = make_cfg(args)
 
     if cfg.debug(): print('UNIVERSAL DEBUG MODE ENABLED')
-    data = DiabetesDataset(cfg)
+    data = AdultDataset(cfg)
 
     print(data.test.columns)
 

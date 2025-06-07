@@ -25,8 +25,10 @@ class DiabetesDataset:
         data = load_diabetes(as_frame=True)
         df = data.frame.copy()
         df["target"] = (df["target"] > df["target"].median()).astype(int)  # convert to binary
-        data = preprocess_numeric(df, target_col="target", n_features=n_features)
+        data = preprocess_numeric(cfg, df, target_col="target", n_features=n_features)
         
         self.train = data['train']
         self.val = data['val']
         self.test = data['test']
+
+        if debug: print(f"Train shape: {self.train.shape}, Val shape: {self.val.shape}, Test shape: {self.test.shape}")
