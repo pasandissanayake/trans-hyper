@@ -38,18 +38,21 @@ def main():
     cfg = make_cfg(args)
 
     if cfg.debug(): print('UNIVERSAL DEBUG MODE ENABLED')
-    combined_dataset = CombinedDataset(cfg, 'test')
-    print(combined_dataset[5009])
+    # combined_dataset = CombinedDataset(cfg, 'train')
+    # print(combined_dataset[5009])
+
+    fewshot_dataset = FewshotDataset(cfg, 'train', n_shots=3, n_queries=4)
+    print(f"Fewshot dataset length: {len(fewshot_dataset)}")
     
-    dataloader = DataLoader(combined_dataset, batch_size=10, shuffle=False)
-
-    # Iterate through the DataLoader
-    for data in dataloader:
-        print(f"Batch data shape: {data['input'].shape}, {data['label'].shape}")
-        # Here you can add your processing logic for each batch
-        # For example, you could pass the batch to a model for inference or training
-        # For demonstration, we will just print the first few elements
-
+    dataloader = DataLoader(fewshot_dataset, batch_size=2, shuffle=False)
+    dl_iter = iter(dataloader)
+    for i, batch in enumerate(dl_iter):
+        # print(f"Batch {i}:\n{batch}")
+        shots = batch['shots']
+        queries = batch['queries']
+        print(f"Batch {i}:\nShots:\n{shots}\n\nQueries:\n{queries}")
+        if i >= 2:
+            break
 
 if __name__ == '__main__':
     main()

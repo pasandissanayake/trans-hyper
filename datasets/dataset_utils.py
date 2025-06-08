@@ -1,4 +1,5 @@
 import copy
+import os
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import train_test_split
@@ -50,3 +51,26 @@ def preprocess_numeric(cfg, df, target_col, n_features, random_state=42):
         'val': val.reset_index(drop=True),
         'test': test.reset_index(drop=True)
     }
+
+
+class RawDataset:
+    def __init__(self, cfg):
+        self.cfg = cfg
+        self.dataset_cfg = getattr(self.cfg.datasets, self.name)
+        self.save_dir = os.path.join(self.cfg.datasets.data_root(), self.dataset_cfg.save_dir())
+        self.n_features = self.dataset_cfg.n_features()
+        self.debug = self.cfg.debug_datasets() or self.cfg.debug()
+
+        if self.debug: print(f"Initializing {self.name} dataset with save_dir: {self.save_dir} and n_features: {self.n_features}")
+
+        if self.save_dir is None:
+            raise ValueError("Save directory must be specified in the configuration.")
+        
+        self._fetch_data()
+                
+        if self.debug: print(f"Train shape: {self.data['train'].shape}, Val shape: {self.data['val'].shape}, Test shape: {self.data['test'].shape}")
+
+    def __getitem__(self, split):
+        if split not in ['train', 'val', 'test']:
+            raise ValueError(f"Invalid split: {split}. Must be one of ['train', 'val', 'test'].")
+        return self.data[split]

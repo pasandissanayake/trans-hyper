@@ -1,5 +1,5 @@
 from .dataset_utils import *
-from .comb_dataset import CombinedDataset
+from .comb_dataset import CombinedDataset, FewshotDataset
 
 from .adult import AdultDataset
 from .diabetes import DiabetesDataset

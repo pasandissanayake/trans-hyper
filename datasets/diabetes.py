@@ -8,30 +8,14 @@ from .dataset_utils import *
 DATASET_NAME = 'diabetes'
 
 @register(DATASET_NAME)
-class DiabetesDataset:
+class DiabetesDataset(RawDataset):
     def __init__(self, cfg):
-        dataset_cfg = getattr(cfg.datasets, DATASET_NAME)
-        save_dir = os.path.join(cfg.datasets.data_root(), dataset_cfg.save_dir())
-        n_features = dataset_cfg.n_features()
-        debug = cfg.debug_datasets() or cfg.debug()
-
-        if debug: print(f"Initializing {DATASET_NAME} dataset with save_dir: {save_dir} and n_features: {n_features}")
-
-        if save_dir is None:
-            raise ValueError("Save directory must be specified in the configuration.")
+        self.name = DATASET_NAME
+        super(DiabetesDataset, self).__init__(cfg)
         
-        os.makedirs(save_dir, exist_ok=True)
-        
-        # data = pd.DataFrame(load_diabetes(as_frame=True))
+    def _fetch_data(self):        
+        os.makedirs(self.save_dir, exist_ok=True)
         data = load_diabetes(as_frame=True)
         df = data.frame.copy()
         df["target"] = (df["target"] > df["target"].median()).astype(int)  # convert to binary
-        data = preprocess_numeric(cfg, df, target_col="target", n_features=n_features)
-        
-        if debug: print(f"Train shape: {data['train'].shape}, Val shape: {data['val'].shape}, Test shape: {data['test'].shape}")
-        self.data = data
-
-    def __getitem__(self, split):
-        if split not in ['train', 'val', 'test']:
-            raise ValueError(f"Invalid split: {split}. Must be one of ['train', 'val', 'test'].")
-        return self.data[split]
+        self.data = preprocess_numeric(self.cfg, df, target_col="target", n_features=self.n_features)

@@ -6,8 +6,15 @@ debug_datasets: false
 datasets:
   data_root: ./data/
 
-  list_combine: # list of datasets to combine
+  list_combine_train: # list of datasets to combine
     - adult
+    - diabetes
+
+  list_combine_val: # list of datasets to combine for validation
+    - adult
+    - diabetes
+  
+  list_combine_test: # list of datasets to combine for testing
     - diabetes
   
   adult:
@@ -16,7 +23,7 @@ datasets:
     test_size: 0.2
     validation_size: 0.1
     n_features: 3
-    str_template: "<features>The final weight is {fnlwgt}. The capital gain is {capital_gain} and the capital loss is {capital_loss}.</features><label>{label}</label>"
+    str_template: "<example>This is the adult income dataset. The final weight is {}. The capital gain is {} and the capital loss is {}. The label is {}.</example>"
     
   diabetes:
     name: diabetes
@@ -24,5 +31,6 @@ datasets:
     test_size: 0.2
     validation_size: 0.1
     n_features: 3
+    str_template: "<example>This is the diabetes dataset. The final weight is {}. The capital gain is {} and the capital loss is {}. The label is {}.</example>"
 
 
