@@ -22,13 +22,16 @@ class DiabetesDataset:
         
         os.makedirs(save_dir, exist_ok=True)
         
+        # data = pd.DataFrame(load_diabetes(as_frame=True))
         data = load_diabetes(as_frame=True)
         df = data.frame.copy()
         df["target"] = (df["target"] > df["target"].median()).astype(int)  # convert to binary
         data = preprocess_numeric(cfg, df, target_col="target", n_features=n_features)
         
-        self.train = data['train']
-        self.val = data['val']
-        self.test = data['test']
+        if debug: print(f"Train shape: {data['train'].shape}, Val shape: {data['val'].shape}, Test shape: {data['test'].shape}")
+        self.data = data
 
-        if debug: print(f"Train shape: {self.train.shape}, Val shape: {self.val.shape}, Test shape: {self.test.shape}")
+    def __getitem__(self, split):
+        if split not in ['train', 'val', 'test']:
+            raise ValueError(f"Invalid split: {split}. Must be one of ['train', 'val', 'test'].")
+        return self.data[split]

@@ -2,6 +2,7 @@ import argparse
 import os
 
 import torch
+from torch.utils.data import DataLoader
 
 from utils import *
 from datasets import *
@@ -37,9 +38,17 @@ def main():
     cfg = make_cfg(args)
 
     if cfg.debug(): print('UNIVERSAL DEBUG MODE ENABLED')
-    data = AdultDataset(cfg)
+    combined_dataset = CombinedDataset(cfg, 'test')
+    print(combined_dataset[5009])
+    
+    dataloader = DataLoader(combined_dataset, batch_size=10, shuffle=False)
 
-    print(data.test.columns)
+    # Iterate through the DataLoader
+    for data in dataloader:
+        print(f"Batch data shape: {data['input'].shape}, {data['label'].shape}")
+        # Here you can add your processing logic for each batch
+        # For example, you could pass the batch to a model for inference or training
+        # For demonstration, we will just print the first few elements
 
 
 if __name__ == '__main__':

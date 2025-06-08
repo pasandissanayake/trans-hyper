@@ -27,12 +27,15 @@ class AdultDataset:
         if debug: print("Downloading Adult dataset from OpenML...")
         dataset = openml.datasets.get_dataset(1590, download_data=True)
         df, y, _, _ = dataset.get_data(dataset_format="dataframe", target=dataset.default_target_attribute)
-        df['label'] = y    
+        df['label'] = y.replace({'>50K': 1, '<=50K': 0})
         if debug: print(f"Saved dataset to {save_dir}")
         
         data = preprocess_numeric(cfg, df, target_col='label', n_features=n_features)
-        self.train = data['train']
-        self.val = data['val']
-        self.test = data['test']
+        if debug: print(f"Train shape: {data['train'].shape}, Val shape: {data['val'].shape}, Test shape: {data['test'].shape}")
+        self.data = data
 
-        if debug: print(f"Train shape: {self.train.shape}, Val shape: {self.val.shape}, Test shape: {self.test.shape}")
+    
+    def __getitem__(self, split):
+        if split not in ['train', 'val', 'test']:
+            raise ValueError(f"Invalid split: {split}. Must be one of ['train', 'val', 'test'].")
+        return self.data[split]
