@@ -7,8 +7,8 @@ datasets:
   data_root: ./data/
 
   list_combine_train: # list of datasets to combine
-    - adult
     - diabetes
+    - adult
 
   list_combine_val: # list of datasets to combine for validation
     - adult

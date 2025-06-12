@@ -1,6 +1,6 @@
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
-from datasets.dataset_utils import datasets
+from datahandles.dataset_utils import datahandles
 
 
 class CombinedDataset(Dataset):
@@ -24,9 +24,9 @@ class CombinedDataset(Dataset):
             self.dataset_list = []
 
         # Initialize datasets based on configuration
-        if not set(self.dataset_list).issubset(list(datasets.keys())):
-            raise ValueError(f"Invalid dataset list: {self.dataset_list}. Available datasets: {list(datasets.keys())}")   
-        self.datasets = [datasets[k](self.cfg) for k in self.dataset_list]  
+        if not set(self.dataset_list).issubset(list(datahandles.keys())):
+            raise ValueError(f"Invalid dataset list: {self.dataset_list}. Available datasets: {list(datahandles.keys())}")   
+        self.datasets = [datahandles[k](self.cfg) for k in self.dataset_list]  
         self.datapoints = [dataset[self.split] for dataset in self.datasets]
             
         self.lengths = [len(ds) for ds in self.datapoints]
@@ -43,8 +43,8 @@ class CombinedDataset(Dataset):
         y = np.int64(row.iloc[-1])
 
         return {
-            "input": x,
-            "label": y
+            "x": x,
+            "y": y
         }
     
     def _get_dataset_idx(self, idx):
@@ -72,7 +72,7 @@ class CombinedTextDataset(CombinedDataset):
         if get_text:
             i, ds_idx = self._get_dataset_idx(idx)
             template = self.datasets[i].dataset_cfg.str_template()  # Get the text template for this dataset
-            text = template.format(*item['input'], item['label'])
+            text = template.format(*item['x'], item['y'])
             return text
         else:
             return item  # Return the raw input and label without text
@@ -103,9 +103,12 @@ class FewshotDataset(Dataset):
         return self.length
 
     def __getitem__(self, idx):
+        separator = ' '
+        shots = separator.join([str(self.combined_dataset[i, True]) for i in self.grouped_indices[idx][:self.n_shots]])
         group = {
-            'shots': [self.combined_dataset[i, True] for i in self.grouped_indices[idx][:self.n_shots]],
-            'queries': [self.combined_dataset[i, False] for i in self.grouped_indices[idx][self.n_shots:]]
+            'shots': shots,
+            'queries_x': np.array([self.combined_dataset[i, False]['x'] for i in self.grouped_indices[idx][self.n_shots:]]),
+            'queries_y': np.array([self.combined_dataset[i, False]['y'] for i in self.grouped_indices[idx][self.n_shots:]])
         }
         return group
     

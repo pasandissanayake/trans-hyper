@@ -3,9 +3,10 @@ import os
 
 import torch
 from torch.utils.data import DataLoader
+import numpy as np
 
 from utils import *
-from datasets import *
+from datahandles import *
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -41,17 +42,18 @@ def main():
     # combined_dataset = CombinedDataset(cfg, 'train')
     # print(combined_dataset[5009])
 
-    fewshot_dataset = FewshotDataset(cfg, 'train', n_shots=3, n_queries=4)
+    fewshot_dataset = FewshotDataset(cfg, 'train', n_shots=3, n_queries=5)
     print(f"Fewshot dataset length: {len(fewshot_dataset)}")
     
-    dataloader = DataLoader(fewshot_dataset, batch_size=2, shuffle=False)
+    dataloader = DataLoader(fewshot_dataset, batch_size=2, shuffle=True)
     dl_iter = iter(dataloader)
     for i, batch in enumerate(dl_iter):
-        # print(f"Batch {i}:\n{batch}")
         shots = batch['shots']
-        queries = batch['queries']
-        print(f"Batch {i}:\nShots:\n{shots}\n\nQueries:\n{queries}")
-        if i >= 2:
+        queries_x = np.array(batch['queries_x'])
+        queries_y = np.array(batch['queries_y'])
+
+        print(f"Batch {i}:\nShots:\n{len(shots)}\n\nQueries_x:\n{queries_x.shape}\n\nQueries_y:\n{queries_y.shape}\n")
+        if i >= 0:
             break
 
 if __name__ == '__main__':
