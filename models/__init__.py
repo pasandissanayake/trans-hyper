@@ -1,3 +1,4 @@
 from .models import register, make
-from . import trans
-from .hyponets import *
+from . import hyponets
+from . import bert
+from . import tokenizers
