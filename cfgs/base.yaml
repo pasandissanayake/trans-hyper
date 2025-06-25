@@ -23,7 +23,7 @@ datasets:
     test_size: 0.2
     validation_size: 0.1
     n_features: 3
-    str_template: "<example>This is the adult income dataset. The final weight is {}. The capital gain is {} and the capital loss is {}. The label is {}.</example>"
+    str_template: "<example>This is the adult income dataset. The final weight is {}. The capital gain is {}. The label is {}.</example>"
     
   diabetes:
     name: diabetes
@@ -31,6 +31,6 @@ datasets:
     test_size: 0.2
     validation_size: 0.1
     n_features: 3
-    str_template: "<example>This is the diabetes dataset. The final weight is {}. The capital gain is {} and the capital loss is {}. The label is {}.</example>"
+    str_template: "<example>This is the diabetes dataset. The final weight is {}. The capital gain is {}. The label is {}.</example>"
 
 

@@ -31,7 +31,7 @@ def preprocess_numeric(cfg, df, target_col, n_features, random_state=42):
     if len(numeric_cols) < n_features:
         raise ValueError(f"Not enough numeric features in the dataset. Found {len(numeric_cols)}, required {n_features}.")
     selected_cols = list(numeric_cols[:n_features])
-    
+        
     # Normalize and center
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(df[selected_cols])
