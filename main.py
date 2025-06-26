@@ -14,6 +14,7 @@ import argparse
 import os
 import einops
 
+from utils import ConfigObject
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -34,10 +35,17 @@ def make_cfg(args):
     else:
         exp_name = args.name
 
-    setattr(cfg, 'env', ConfigObject())
-    setattr(cfg.env, 'exp_name', ConfigObject(exp_name))
-    setattr(cfg.env, 'total_gpus', ConfigObject(torch.cuda.device_count()))
+    if args.tag is not None:
+        exp_name += '_' + args.tag
 
+    setattr(cfg, "env", ConfigObject())
+    setattr(cfg.env, "exp_name", ConfigObject(exp_name))
+    setattr(cfg.env, "total_gpus", ConfigObject(torch.cuda.device_count()))
+    setattr(cfg.env, "save_dir", ConfigObject(os.path.join(args.save_root, exp_name)))
+    setattr(cfg.env, "wandb_upload", ConfigObject(args.wandb_upload))
+    setattr(cfg.env, "port", ConfigObject(str(29600 + args.port_offset)))
+    setattr(cfg.env, "cudnn", ConfigObject(args.cudnn))
+   
     return cfg
 
 class TextRegressionDataset(Dataset):
@@ -112,8 +120,9 @@ def main():
     cfg = make_cfg(args)
 
     if cfg.debug(): print('UNIVERSAL DEBUG MODE ENABLED')
-    # combined_dataset = CombinedDataset(cfg, 'train')
-    # print(combined_dataset[5009])
+
+    
+
 
     fewshot_dataset = FewshotDataset(cfg, 'train', n_shots=3, n_queries=5)
     print(f"Fewshot dataset length: {len(fewshot_dataset)}") 

@@ -38,23 +38,27 @@ import models
 import utils
 from trainers import register
 
+TRAINER_NAME = "base_trainer"
 
 @register('base_trainer')
 class BaseTrainer():
 
     def __init__(self, rank, cfg):
+        self.name = TRAINER_NAME
         self.rank = rank
         self.cfg = cfg
-        self.is_master = (rank == 0)
+        self.trainer_cfg = getattr(self.cfg.trainer, self.name)
+        self.debug = self.cfg.debug() or self.cfg.debug_trainer()
 
-        env = cfg['env']
-        self.tot_gpus = env['tot_gpus']
-        self.distributed = (env['tot_gpus'] > 1)
+        self.is_master = (rank == 0)
+        
+        self.total_gpus = self.cfg.env.total_gpus()
+        self.distributed = (self.total_gpus > 1)
 
         # Setup log, tensorboard, wandb
         if self.is_master:
-            logger, writer = utils.set_save_dir(env['save_dir'], replace=False)
-            with open(osp.join(env['save_dir'], 'cfg.yaml'), 'w') as f:
+            logger, writer = utils.set_save_dir(self.cfg.env.save_dir(), replace=False)
+            with open(osp.join(self.cfg.env.save_dir(), 'cfg.yaml'), 'w') as f:
                 yaml.dump(cfg, f, sort_keys=False)
 
             self.log = logger.info
@@ -62,12 +66,12 @@ class BaseTrainer():
             self.enable_tb = True
             self.writer = writer
 
-            if env['wandb_upload']:
+            if self.cfg.env.wandb_upload():
                 self.enable_wandb = True
                 with open('wandb.yaml', 'r') as f:
                     wandb_cfg = yaml.load(f, Loader=yaml.FullLoader)
-                os.environ['WANDB_DIR'] = env['save_dir']
-                os.environ['WANDB_NAME'] = env['exp_name']
+                os.environ['WANDB_DIR'] = self.cfg.env.save_dir()
+                os.environ['WANDB_NAME'] = self.cfg.env.exp_name()
                 os.environ['WANDB_API_KEY'] = wandb_cfg['api_key']
                 wandb.init(project=wandb_cfg['project'], entity=wandb_cfg['entity'], config=cfg)
             else:
@@ -82,20 +86,20 @@ class BaseTrainer():
         self.device = torch.device('cuda', torch.cuda.current_device())
 
         if self.distributed:
-            dist_url = f"tcp://localhost:{env['port']}"
+            dist_url = f"tcp://localhost:{self.cfg.env.port()}"
             dist.init_process_group(backend='nccl', init_method=dist_url,
-                                    world_size=self.tot_gpus, rank=rank)
+                                    world_size=self.total_gpus, rank=rank)
             self.log(f'Distributed training enabled.')
 
-        cudnn.benchmark = env['cudnn']
+        cudnn.benchmark = self.cfg.env.cudnn()
 
         self.log(f'Environment setup done.')
 
     def run(self):
         self.make_datasets()
 
-        if self.cfg.get('eval_model') is not None:
-            model_spec = torch.load(self.cfg['eval_model'])['model']
+        if self.cfg.eval_model() is not None:
+            model_spec = torch.load(self.cfg.eval_model())['model']
             self.make_model(model_spec, load_sd=True)
             self.epoch = 0
             self.log_buffer = []
@@ -112,7 +116,7 @@ class BaseTrainer():
         if self.enable_wandb:
             wandb.finish()
 
-    def make_datasets(self):
+    def make_datasets(self, train_ds=None, test_ds=None):
         """
             By default, train dataset performs shuffle and drop_last.
             Distributed sampler will extend the dataset with a prefix to make the length divisible by tot_gpus, samplers should be stored in .dist_samplers.
@@ -124,40 +128,33 @@ class BaseTrainer():
                 args:
                 loader: {batch_size: , num_workers: }
         """
-        cfg = self.cfg
         self.dist_samplers = []
 
         def make_distributed_loader(dataset, batch_size, num_workers, shuffle=False, drop_last=False):
             sampler = DistributedSampler(dataset, shuffle=shuffle) if self.distributed else None
             loader = DataLoader(
                 dataset,
-                batch_size // self.tot_gpus,
+                batch_size // self.total_gpus,
                 drop_last=drop_last,
                 sampler=sampler,
                 shuffle=(shuffle and (sampler is None)),
-                num_workers=num_workers // self.tot_gpus,
+                num_workers=num_workers // self.total_gpus,
                 pin_memory=True)
             return loader, sampler
 
-        if cfg.get('train_dataset') is not None:
-            train_dataset = datasets.make(cfg['train_dataset'])
-            self.log(f'Train dataset: len={len(train_dataset)}')
-            l = cfg['train_dataset']['loader']
+        if train_ds is not None:
             self.train_loader, train_sampler = make_distributed_loader(
-                train_dataset, l['batch_size'], l['num_workers'], shuffle=True, drop_last=True)
+                train_ds, self.cfg.trainer.batch_size(), self.cfg.trainer.n_workers(), shuffle=True, drop_last=True)
             self.dist_samplers.append(train_sampler)
-
-        if cfg.get('test_dataset') is not None:
-            test_dataset = datasets.make(cfg['test_dataset'])
-            self.log(f'Test dataset: len={len(test_dataset)}')
-            l = cfg['test_dataset']['loader']
+        
+        if train_ds is not None:
             self.test_loader, test_sampler = make_distributed_loader(
-                test_dataset, l['batch_size'], l['num_workers'], shuffle=False, drop_last=False)
+                test_ds, self.cfg.trainer.batch_size(), self.cfg.trainer.n_workers(), shuffle=False, drop_last=False)
             self.dist_samplers.append(test_sampler)
 
     def make_model(self, model_spec=None, load_sd=False):
         if model_spec is None:
-            model_spec = self.cfg['model']
+            model_spec = self.cfg.hypernet.model()
         model = models.make(model_spec, load_sd=load_sd)
         self.log(f'Model: #params={utils.compute_num_params(model)}')
 
@@ -178,12 +175,12 @@ class BaseTrainer():
         """
         cfg = self.cfg
 
-        self.optimizer = utils.make_optimizer(self.model_ddp.parameters(), cfg['optimizer'])
+        self.optimizer = utils.make_optimizer(self.model_ddp.parameters(), cfg.trainer.optimizer())
 
-        max_epoch = cfg['max_epoch']
-        eval_epoch = cfg.get('eval_epoch', max_epoch + 1)
-        vis_epoch = cfg.get('vis_epoch', max_epoch + 1)
-        save_epoch = cfg.get('save_epoch', max_epoch + 1)
+        max_epoch = cfg.trainer.max_epoch()
+        eval_epoch = cfg.trainer.eval_epoch()
+        vis_epoch = cfg.trainer.vis_epoch()
+        save_epoch = cfg.trainer.save_epoch()
         epoch_timer = utils.EpochTimer(max_epoch)
 
         for epoch in range(1, max_epoch + 1):
@@ -215,7 +212,7 @@ class BaseTrainer():
             self.log(', '.join(self.log_buffer))
 
     def adjust_learning_rate(self):
-        base_lr = self.cfg['optimizer']['args']['lr']
+        base_lr = self.cfg.optimizer.args()['lr']
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = base_lr
         self.log_temp_scalar('lr', self.optimizer.param_groups[0]['lr'])
@@ -230,14 +227,14 @@ class BaseTrainer():
 
     def dist_all_reduce_mean_(self, x):
         dist.all_reduce(x, op=dist.ReduceOp.SUM)
-        x.div_(self.tot_gpus)
+        x.div_(self.total_gpus)
 
     def sync_ave_scalars_(self, ave_scalars):
         for k in ave_scalars.keys():
             x = torch.tensor(ave_scalars[k].item(), dtype=torch.float32, device=self.device)
             self.dist_all_reduce_mean_(x)
             ave_scalars[k].v = x.item()
-            ave_scalars[k].n *= self.tot_gpus
+            ave_scalars[k].n *= self.total_gpus
 
     def train_step(self, data):
         data = {k: v.cuda() for k, v in data.items()}
@@ -325,14 +322,12 @@ class BaseTrainer():
     def save_checkpoint(self, filename):
         if not self.is_master:
             return
-        model_spec = self.cfg['model']
-        model_spec['sd'] = self.model.state_dict()
-        optimizer_spec = self.cfg['optimizer']
-        optimizer_spec['sd'] = self.optimizer.state_dict()
+        model_state = self.model.state_dict()
+        optimizer_state = self.optimizer.state_dict()
         checkpoint = {
-            'model': model_spec,
-            'optimizer': optimizer_spec,
+            'model': model_state,
+            'optimizer': optimizer_state,
             'epoch': self.epoch,
             'cfg': self.cfg,
         }
-        torch.save(checkpoint, osp.join(self.cfg['env']['save_dir'], filename))
+        torch.save(checkpoint, osp.join(self.cfg.env.save_dir(), filename))

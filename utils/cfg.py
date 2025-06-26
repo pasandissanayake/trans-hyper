@@ -22,10 +22,7 @@ class ConfigObject:
 
 
 class Config:
-    def __init__(self, cfg_file, debug=False) -> None:
-        with open(cfg_file, 'r') as f:
-            cfg_dict = yaml.load(f, Loader=yaml.FullLoader)
-
+    def __init__(self, cfg_file=None, cfg_dict=None, debug=False) -> None:
         def translate_cfg(obj, d):
             for k, v in d.items():
                 setattr(obj, k, ConfigObject())
@@ -35,6 +32,35 @@ class Config:
                 else:
                     if debug: print(f"Setting config key: {k} with value: {v}")
                     setattr(obj, k, ConfigObject(v))
-        translate_cfg(self, cfg_dict)
 
-    
+        if cfg_file is not None:
+            with open(cfg_file, 'r') as f:
+                cfg_dict = yaml.load(f, Loader=yaml.FullLoader)        
+            translate_cfg(self, cfg_dict)
+        elif cfg_dict is not None:
+            translate_cfg(self, cfg_dict)
+        else:
+            raise ValueError("Config init error. Both cfg_file and cfg_dict are None")
+        
+    def to_dict(self):
+        val_dict = {}
+        def unwrap(obj, obj_name, parent_dict):
+            if isinstance(obj, ConfigObject):
+                if obj.val is None:
+                    attr_list = list(obj.__dict__.keys())
+                    attr_list.remove("val")
+                    parent_dict[obj_name] = {}
+                    for attr in attr_list:
+                        unwrap(getattr(obj, attr), attr, parent_dict[obj_name])
+                else:
+                    parent_dict[obj_name] = obj.val
+            elif isinstance(obj, Config):
+                attr_list = list(obj.__dict__.keys())
+                for attr in attr_list:
+                    unwrap(getattr(obj, attr), attr, parent_dict)
+            else:
+                raise ValueError("Config object parse error")
+                
+        
+        unwrap(self, None, val_dict)
+        return val_dict
