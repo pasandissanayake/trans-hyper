@@ -37,18 +37,22 @@ import datasets
 import models
 import utils
 from trainers import register
+import einops
 
 TRAINER_NAME = "base_trainer"
 
 @register('base_trainer')
 class BaseTrainer():
 
-    def __init__(self, rank, cfg):
+    def __init__(self, rank, cfg, train_ds=None, test_ds=None):
         self.name = TRAINER_NAME
         self.rank = rank
         self.cfg = cfg
         self.trainer_cfg = getattr(self.cfg.trainer, self.name)
         self.debug = self.cfg.debug() or self.cfg.debug_trainer()
+
+        self.train_ds = train_ds
+        self.test_ds = test_ds
 
         self.is_master = (rank == 0)
         
@@ -99,8 +103,9 @@ class BaseTrainer():
         self.make_datasets()
 
         if self.cfg.eval_model() is not None:
-            model_spec = torch.load(self.cfg.eval_model())['model']
-            self.make_model(model_spec, load_sd=True)
+            checkpoint = torch.load(self.cfg.eval_model())
+            cfg = checkpoint['cfg']
+            self.make_model(cfg=cfg, sd=checkpoint['model_state'])
             self.epoch = 0
             self.log_buffer = []
             self.t_data, self.t_model = 0, 0
@@ -116,7 +121,7 @@ class BaseTrainer():
         if self.enable_wandb:
             wandb.finish()
 
-    def make_datasets(self, train_ds=None, test_ds=None):
+    def make_datasets(self):
         """
             By default, train dataset performs shuffle and drop_last.
             Distributed sampler will extend the dataset with a prefix to make the length divisible by tot_gpus, samplers should be stored in .dist_samplers.
@@ -142,20 +147,20 @@ class BaseTrainer():
                 pin_memory=True)
             return loader, sampler
 
-        if train_ds is not None:
+        if self.train_ds is not None:
             self.train_loader, train_sampler = make_distributed_loader(
-                train_ds, self.cfg.trainer.batch_size(), self.cfg.trainer.n_workers(), shuffle=True, drop_last=True)
+                self.train_ds, self.cfg.trainer.batch_size(), self.cfg.trainer.n_workers(), shuffle=True, drop_last=True)
             self.dist_samplers.append(train_sampler)
         
-        if train_ds is not None:
+        if self.train_ds is not None:
             self.test_loader, test_sampler = make_distributed_loader(
-                test_ds, self.cfg.trainer.batch_size(), self.cfg.trainer.n_workers(), shuffle=False, drop_last=False)
+                self.test_ds, self.cfg.trainer.batch_size(), self.cfg.trainer.n_workers(), shuffle=False, drop_last=False)
             self.dist_samplers.append(test_sampler)
 
-    def make_model(self, model_spec=None, load_sd=False):
-        if model_spec is None:
-            model_spec = self.cfg.hypernet.model()
-        model = models.make(model_spec, load_sd=load_sd)
+    def make_model(self, cfg=None, sd=None):
+        if cfg is None:
+            cfg = self.cfg
+        model = models.make(model_name=cfg.hypernet.model(), cfg=cfg, sd=sd)
         self.log(f'Model: #params={utils.compute_num_params(model)}')
 
         if self.distributed:
@@ -236,9 +241,19 @@ class BaseTrainer():
             ave_scalars[k].v = x.item()
             ave_scalars[k].n *= self.total_gpus
 
+    def compute_loss(self, data):
+        shots = data['shots']
+        queries_x = data['queries_x']
+        queries_y = data['queries_y']
+        hyponet = self.model_ddp(shots)
+        criterion = nn.CrossEntropyLoss()
+        loss = criterion(einops.rearrange(hyponet(queries_x), "batch n_queries n_class -> (batch n_queries) n_class"),
+                         einops.rearrange(queries_y, "batch n_queries -> (batch n_queries)"))
+        return loss
+
     def train_step(self, data):
         data = {k: v.cuda() for k, v in data.items()}
-        loss = self.model_ddp(data)
+        loss = self.compute_loss(data)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -266,7 +281,7 @@ class BaseTrainer():
                 ave_scalars[k].add(v, n=B)
 
             if self.is_master:
-                pbar.set_description(desc=f'train: loss={ret["loss"]:.4f}')
+                pbar.set_description(desc=f'train: loss={ret["loss"]:.4f}') # type: ignore
             t1 = time.time()
 
         if self.distributed:
@@ -281,7 +296,7 @@ class BaseTrainer():
     def evaluate_step(self, data):
         data = {k: v.cuda() for k, v in data.items()}
         with torch.no_grad():
-            loss = self.model_ddp(data)
+            loss = self.compute_loss(data)
         return {'loss': loss.item()}
 
     def evaluate_epoch(self):
@@ -328,6 +343,6 @@ class BaseTrainer():
             'model': model_state,
             'optimizer': optimizer_state,
             'epoch': self.epoch,
-            'cfg': self.cfg,
+            'cfg': self.cfg.to_dict(),
         }
         torch.save(checkpoint, osp.join(self.cfg.env.save_dir(), filename))

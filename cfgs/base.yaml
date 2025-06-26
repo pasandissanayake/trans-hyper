@@ -1,6 +1,8 @@
 # experiment configuration
 name: test
 save_dir: './save/'
+# eval_model: 'path to model to be evaluated; if inactive, train new model'
+
 
 # debugging configuration
 debug: true

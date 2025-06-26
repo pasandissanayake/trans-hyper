@@ -2,14 +2,14 @@ from torch import nn
 from transformers import BertModel
 import torch.nn.functional as F
 
-from models import register
+from models import register, make
 
 
 HYPERNET_NAME = "bert"
 
 @register(HYPERNET_NAME)
 class BertRegressionModel(nn.Module):
-    def __init__(self, cfg, hyponet, tokenizer):
+    def __init__(self, cfg):
         super().__init__()
         self.name = HYPERNET_NAME
         self.cfg = cfg
@@ -17,8 +17,8 @@ class BertRegressionModel(nn.Module):
         self.debug = self.cfg.debug_hypernet() or self.cfg.debug()
         
         self.bert = BertModel.from_pretrained(self.hypernet_cfg.name())
-        self.hyponet = hyponet
-        self.tokenizer = tokenizer
+        self.hyponet = make(model_name=self.cfg.hyponet.model(), cfg=self.cfg, sd=None)
+        self.tokenizer = make(model_name=self.cfg.tokenizer.model(), cfg=self.cfg, sd=None)
         
         total_params = 0
         for name, shape in self.hyponet.param_shapes.items():
