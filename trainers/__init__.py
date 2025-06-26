@@ -1,2 +1,2 @@
-from .trainers import register, trainers_dict
+from .trainers import register, trainers
 from .base_trainer import BaseTrainer

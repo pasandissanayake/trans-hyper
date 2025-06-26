@@ -51,13 +51,13 @@ def compute_num_params(model, text=True):
         return tot
 
 
-def make_optimizer(params, optimizer_spec, load_sd=False):
+def make_optimizer(params, cfg, sd=None):
     optimizer = {
         'sgd': SGD,
         'adam': Adam
-    }[optimizer_spec['name']](params, **optimizer_spec['args'])
-    if load_sd:
-        optimizer.load_state_dict(optimizer_spec['sd'])
+    }[cfg.trainer.optimizer.name()](params, **cfg.trainer.optimizer.args.to_dict())
+    if sd is not None:
+        optimizer.load_state_dict(sd)
     return optimizer
 
 

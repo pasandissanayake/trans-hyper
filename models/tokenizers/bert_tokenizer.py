@@ -9,7 +9,7 @@ class TokenizerForBert():
     def __init__(self, cfg) -> None:
         self.name = TOKENIZER_NAME
         self.cfg = cfg
-        self.tokenizer_cfg = getattr(self.cfg.tokenizer, self.name)
+        self.tokenizer_cfg = self.cfg.tokenizer
         self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:

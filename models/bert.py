@@ -13,13 +13,12 @@ class BertRegressionModel(nn.Module):
         super().__init__()
         self.name = HYPERNET_NAME
         self.cfg = cfg
-        self.hypernet_cfg = getattr(self.cfg.hypernet, self.name)
+        self.hypernet_cfg = self.cfg.hypernet
         self.debug = self.cfg.debug_hypernet() or self.cfg.debug()
         
         self.bert = BertModel.from_pretrained(self.hypernet_cfg.name())
         self.hyponet = make(model_name=self.cfg.hyponet.model(), cfg=self.cfg, sd=None)
-        self.tokenizer = make(model_name=self.cfg.tokenizer.model(), cfg=self.cfg, sd=None)
-        
+               
         total_params = 0
         for name, shape in self.hyponet.param_shapes.items():
             total_params += shape[0] * shape[1]
@@ -34,8 +33,7 @@ class BertRegressionModel(nn.Module):
             print(f"total hyponet params: {total_params}")
             
     def forward(self, data):
-        encodings = self.tokenizer(data)
-        outputs = self.bert(input_ids=encodings[["input_ids"]], attention_mask=encodings["attention_mask"])
+        outputs = self.bert(input_ids=data["input_ids"], attention_mask=data["attention_mask"])
         outputs = outputs.last_hidden_state[:, 0, :]  # [CLS] token output
         outputs = self.regressor(outputs)
 

@@ -1,8 +1,8 @@
-trainers_dict = {}
+trainers = {}
 
 
 def register(name):
     def decorator(cls):
-        trainers_dict[name] = cls
+        trainers[name] = cls
         return cls
     return decorator

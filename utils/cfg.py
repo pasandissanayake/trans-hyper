@@ -19,6 +19,24 @@ class ConfigObject:
     
     def __repr__(self):
         return f"{self.val}"
+    
+    def to_dict(self):
+        val_dict = {}
+        def unwrap(obj, obj_name, parent_dict):
+            if isinstance(obj, ConfigObject):
+                if obj.val is None:
+                    attr_list = list(obj.__dict__.keys())
+                    attr_list.remove("val")
+                    parent_dict[obj_name] = {}
+                    for attr in attr_list:
+                        unwrap(getattr(obj, attr), attr, parent_dict[obj_name])
+                else:
+                    parent_dict[obj_name] = obj.val
+            else:
+                raise ValueError("Config object parse error")
+                
+        unwrap(self, None, val_dict)
+        return val_dict[None]
 
 
 class Config:
@@ -61,6 +79,6 @@ class Config:
             else:
                 raise ValueError("Config object parse error")
                 
-        
         unwrap(self, None, val_dict)
         return val_dict
+

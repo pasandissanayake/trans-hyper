@@ -4,7 +4,7 @@ from models import register
 from .layers import batched_linear_mm
 
 
-HYPONET_NAME = "hypo_mlp"
+HYPONET_NAME = "mlp"
 
 @register(HYPONET_NAME)
 class HypoMlp(nn.Module):
@@ -12,7 +12,7 @@ class HypoMlp(nn.Module):
         super().__init__()
         self.name = HYPONET_NAME
         self.cfg = cfg
-        self.hyponet_cfg = getattr(self.cfg.hyponet, self.name)
+        self.hyponet_cfg = self.cfg.hyponet
         self.debug = self.cfg.debug() or self.cfg.debug_hyponet()
 
         self.depth = self.hyponet_cfg.depth()

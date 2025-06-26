@@ -1,7 +1,7 @@
 # experiment configuration
 name: test
 save_dir: './save/'
-# eval_model: 'path to model to be evaluated; if inactive, train new model'
+eval_model: false
 
 
 # debugging configuration
@@ -38,6 +38,7 @@ tokenizer:
 
 # trainer configuration
 trainer:
+  name: base_trainer
   batch_size: 128
   n_workers: 1
   max_epoch: 10
@@ -46,7 +47,8 @@ trainer:
   save_epoch: 5
   optimizer:
     name: adam
-    args: {lr: 1.e-4} 
+    args:
+      lr: 1.e-4 
     
 
 

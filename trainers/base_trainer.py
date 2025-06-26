@@ -1,6 +1,8 @@
 """
     A basic trainer.
 
+    Change compute_loss() according to the specific cases
+
     The general procedure in run() is:
         make_datasets()
             create . train_loader, test_loader, dist_samplers
@@ -48,7 +50,7 @@ class BaseTrainer():
         self.name = TRAINER_NAME
         self.rank = rank
         self.cfg = cfg
-        self.trainer_cfg = getattr(self.cfg.trainer, self.name)
+        self.trainer_cfg = self.cfg.trainer
         self.debug = self.cfg.debug() or self.cfg.debug_trainer()
 
         self.train_ds = train_ds
@@ -102,7 +104,7 @@ class BaseTrainer():
     def run(self):
         self.make_datasets()
 
-        if self.cfg.eval_model() is not None:
+        if self.cfg.eval_model():
             checkpoint = torch.load(self.cfg.eval_model())
             cfg = checkpoint['cfg']
             self.make_model(cfg=cfg, sd=checkpoint['model_state'])
@@ -180,7 +182,7 @@ class BaseTrainer():
         """
         cfg = self.cfg
 
-        self.optimizer = utils.make_optimizer(self.model_ddp.parameters(), cfg.trainer.optimizer())
+        self.optimizer = utils.make_optimizer(self.model_ddp.parameters(), cfg)
 
         max_epoch = cfg.trainer.max_epoch()
         eval_epoch = cfg.trainer.eval_epoch()
@@ -217,7 +219,7 @@ class BaseTrainer():
             self.log(', '.join(self.log_buffer))
 
     def adjust_learning_rate(self):
-        base_lr = self.cfg.optimizer.args()['lr']
+        base_lr = self.cfg.trainer.optimizer.args.lr()
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = base_lr
         self.log_temp_scalar('lr', self.optimizer.param_groups[0]['lr'])
@@ -242,17 +244,21 @@ class BaseTrainer():
             ave_scalars[k].n *= self.total_gpus
 
     def compute_loss(self, data):
+        tokenizer = models.make(model_name=self.cfg.tokenizer.model(), cfg=self.cfg, sd=None)
         shots = data['shots']
-        queries_x = data['queries_x']
-        queries_y = data['queries_y']
-        hyponet = self.model_ddp(shots)
+        shots = tokenizer(shots)
+        input_ids = shots['input_ids'].cuda()
+        attention_mask = shots['attention_mask'].cuda()
+        queries_x = data['queries_x'].cuda()
+        queries_y = data['queries_y'].cuda()
+
+        hyponet = self.model_ddp({'input_ids': input_ids, 'attention_mask': attention_mask})
         criterion = nn.CrossEntropyLoss()
         loss = criterion(einops.rearrange(hyponet(queries_x), "batch n_queries n_class -> (batch n_queries) n_class"),
                          einops.rearrange(queries_y, "batch n_queries -> (batch n_queries)"))
         return loss
 
     def train_step(self, data):
-        data = {k: v.cuda() for k, v in data.items()}
         loss = self.compute_loss(data)
         self.optimizer.zero_grad()
         loss.backward()
@@ -294,7 +300,6 @@ class BaseTrainer():
         self.log_buffer.append(logtext)
 
     def evaluate_step(self, data):
-        data = {k: v.cuda() for k, v in data.items()}
         with torch.no_grad():
             loss = self.compute_loss(data)
         return {'loss': loss.item()}
