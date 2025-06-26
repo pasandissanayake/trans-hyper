@@ -35,7 +35,6 @@ from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel
 
-import datasets
 import models
 import utils
 from trainers import register
@@ -43,7 +42,7 @@ import einops
 
 TRAINER_NAME = "base_trainer"
 
-@register('base_trainer')
+@register(TRAINER_NAME)
 class BaseTrainer():
 
     def __init__(self, rank, cfg, train_ds=None, test_ds=None):

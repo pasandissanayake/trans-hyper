@@ -1,0 +1,85 @@
+# experiment configuration
+name: bert
+save_dir: './save/'
+eval_model: false
+
+
+# debugging configuration
+debug: true
+debug_datasets: false
+debug_hypernet: false
+debug_hyponet: false
+debug_trainer: false
+
+
+# hypernet configuration
+hypernet:
+  model: bert
+  name: bert-base-uncased
+
+
+# hyponet configuration
+hyponet:
+  model: mlp
+  in_dim: 3
+  out_dim: 2
+  hidden_dim: 4
+  depth: 3
+
+
+# tokenizer configuration
+tokenizer:
+  model: bert_tokenizer
+  name: bert-base-uncased
+  truncation: True
+  padding: max_length
+  max_length: 256
+
+
+# trainer configuration
+trainer:
+  name: bert_trainer
+  batch_size: 128
+  n_workers: 1
+  max_epoch: 10
+  eval_epoch: 2
+  vis_epoch: 31
+  save_epoch: 5
+  optimizer:
+    name: adam
+    args:
+      lr: 1.e-4 
+    
+
+
+# dataset configuration
+datasets:
+  data_root: ./data/
+
+  list_combine_train: # list of datasets to combine
+    - adult
+
+  list_combine_val: # list of datasets to combine for validation
+    - adult
+    - diabetes
+  
+  list_combine_test: # list of datasets to combine for testing
+    - diabetes
+  
+  adult:
+    name: adult
+    save_dir: adult
+    test_size: 0.2
+    validation_size: 0.1
+    n_features: 3
+    str_template: "<example>This is the adult income dataset. The final weight is {}. The capital gain is {}. The label is {}.</example>"
+    
+  diabetes:
+    name: diabetes
+    save_dir: diabetes
+    test_size: 0.2
+    validation_size: 0.1
+    n_features: 3
+    str_template: "<example>This is the diabetes dataset. The final weight is {}. The capital gain is {}. The label is {}.</example>"
+
+
