@@ -92,7 +92,7 @@ class FewshotDataset(Dataset):
         self.combined_dataset = CombinedTextDataset(cfg, split)
         self.combds_length = len(self.combined_dataset)
         if self.combds_length < self.block_len:
-            raise ValueError(f"Not enough samples in combined dataset for few-shot learning. Required: {n_shots}, Available: {self.combds_length}")
+            raise ValueError(f"Not enough samples in combined dataset for few-shot learning. Required: {self.block_len}, Available: {self.combds_length}")
 
         # Randomly sample from the combined dataset
         self.length = self.combds_length // self.block_len

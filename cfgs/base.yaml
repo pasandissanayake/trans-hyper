@@ -55,6 +55,8 @@ trainer:
 # dataset configuration
 datasets:
   data_root: ./data/
+  n_shots: 5
+  n_queries: 10
 
   list_combine_train: # list of datasets to combine
     - diabetes

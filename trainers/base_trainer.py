@@ -1,7 +1,8 @@
 """
     A basic trainer.
 
-    Change compute_loss() according to the specific cases
+    Define train_step(self, data) -> metrics (e.g.: loss, accuracy) and 
+    evaluate_step(self, data) -> metrics according to the specific cases
 
     The general procedure in run() is:
         make_datasets()
@@ -22,15 +23,16 @@
 
 import os
 import os.path as osp
+from abc import ABC, abstractmethod
 import time
-
 import yaml
+import wandb
+from tqdm import tqdm
+
 import torch
 import torch.nn as nn
 import torch.backends.cudnn as cudnn
 import torch.distributed as dist
-import wandb
-from tqdm import tqdm
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 from torch.nn.parallel import DistributedDataParallel
@@ -38,12 +40,11 @@ from torch.nn.parallel import DistributedDataParallel
 import models
 import utils
 from trainers import register
-import einops
 
 TRAINER_NAME = "base_trainer"
 
 @register(TRAINER_NAME)
-class BaseTrainer():
+class BaseTrainer(ABC):
 
     def __init__(self, rank, cfg, train_ds=None, test_ds=None):
         self.name = TRAINER_NAME
@@ -105,8 +106,9 @@ class BaseTrainer():
 
         if self.cfg.eval_model():
             checkpoint = torch.load(self.cfg.eval_model())
-            cfg = checkpoint['cfg']
-            self.make_model(cfg=cfg, sd=checkpoint['model_state'])
+            print(checkpoint.keys())
+            cfg = utils.Config(cfg_dict=checkpoint['cfg'])
+            self.make_model(cfg=cfg, sd=checkpoint['model'])
             self.epoch = 0
             self.log_buffer = []
             self.t_data, self.t_model = 0, 0
@@ -242,27 +244,10 @@ class BaseTrainer():
             ave_scalars[k].v = x.item()
             ave_scalars[k].n *= self.total_gpus
 
-    def compute_loss(self, data):
-        tokenizer = models.make(model_name=self.cfg.tokenizer.model(), cfg=self.cfg, sd=None)
-        shots = data['shots']
-        shots = tokenizer(shots)
-        input_ids = shots['input_ids'].cuda()
-        attention_mask = shots['attention_mask'].cuda()
-        queries_x = data['queries_x'].cuda()
-        queries_y = data['queries_y'].cuda()
-
-        hyponet = self.model_ddp({'input_ids': input_ids, 'attention_mask': attention_mask})
-        criterion = nn.CrossEntropyLoss()
-        loss = criterion(einops.rearrange(hyponet(queries_x), "batch n_queries n_class -> (batch n_queries) n_class"),
-                         einops.rearrange(queries_y, "batch n_queries -> (batch n_queries)"))
-        return loss
-
+    @abstractmethod
     def train_step(self, data):
-        loss = self.compute_loss(data)
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-        return {'loss': loss.item()}
+        loss = None
+        return {'loss': loss}
 
     def train_epoch(self):
         self.model_ddp.train()
@@ -298,10 +283,11 @@ class BaseTrainer():
             self.log_temp_scalar('train/' + k, v.item())
         self.log_buffer.append(logtext)
 
+    @abstractmethod
     def evaluate_step(self, data):
         with torch.no_grad():
-            loss = self.compute_loss(data)
-        return {'loss': loss.item()}
+            loss = None
+        return {'loss': loss}
 
     def evaluate_epoch(self):
         self.model_ddp.eval()

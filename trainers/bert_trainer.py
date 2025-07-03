@@ -14,11 +14,11 @@ class BertTrainer(BaseTrainer):
     def __init__(self, rank, cfg, train_ds=None, test_ds=None):
         super().__init__(rank=rank, cfg=cfg, train_ds=train_ds, test_ds=test_ds)
         self.name = TRAINER_NAME
+        self.tokenizer = models.make(model_name=self.cfg.tokenizer.model(), cfg=self.cfg, sd=None)
 
     def compute_loss(self, data):
-        tokenizer = models.make(model_name=self.cfg.tokenizer.model(), cfg=self.cfg, sd=None)
         shots = data['shots']
-        shots = tokenizer(shots)
+        shots = self.tokenizer(shots)
         input_ids = shots['input_ids'].cuda()
         attention_mask = shots['attention_mask'].cuda()
         queries_x = data['queries_x'].cuda()
@@ -61,6 +61,13 @@ class BertTrainer(BaseTrainer):
 
         return self.accuracy(einops.rearrange(hyponet(queries_x), "batch n_queries n_class -> (batch n_queries) n_class"),
                          einops.rearrange(queries_y, "batch n_queries -> (batch n_queries)"))
+    
+    def train_step(self, data):
+        loss = self.compute_loss(data)
+        self.optimizer.zero_grad()
+        loss.backward()
+        self.optimizer.step()
+        return {'loss': loss.item()}
 
     def evaluate_step(self, data):
         with torch.no_grad():
