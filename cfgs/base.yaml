@@ -85,4 +85,9 @@ datasets:
     n_features: 3
     str_template: "<example>This is the diabetes dataset. The final weight is {}. The capital gain is {}. The label is {}.</example>"
 
+  tabllm:
+    raw_data_path: "tabllm/data/datasets"
+    txt_data_path: "tabllm/data/datasets_serialized"
+    
+
 

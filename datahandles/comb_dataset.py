@@ -2,7 +2,8 @@ from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from datahandles.dataset_utils import datahandles
 
-
+# TODO: change how the splits are handled -- load all splits at once so that test, train 
+# and val splits do not have an overlap
 class CombinedDataset(Dataset):
     def __init__(self, cfg, split: str):
         super(CombinedDataset, self).__init__()
@@ -29,8 +30,10 @@ class CombinedDataset(Dataset):
         self.datasets = [datahandles[k](self.cfg) for k in self.dataset_list]  
         self.datapoints = [dataset[self.split] for dataset in self.datasets]
             
-        self.lengths = [len(ds) for ds in self.datapoints]
+        self.lengths = [ds.shape[0] for ds in self.datapoints]
         self.total_length = sum(self.lengths)
+        self.n_features = [ds.shape[1]-1 for ds in self.datapoints]
+        self.max_n_features = max(self.n_features)
 
     def __len__(self):
         return self.total_length
@@ -39,7 +42,8 @@ class CombinedDataset(Dataset):
         i, ds_idx = self._get_dataset_idx(idx)
         row = self.datapoints[i].iloc[ds_idx]
 
-        x = row[:-1].to_numpy(dtype=np.float32)
+        x = np.zeros(self.max_n_features)
+        x[:self.n_features[i]] = row[:-1].to_numpy(dtype=np.float32)
         y = np.int64(row.iloc[-1])
 
         return {

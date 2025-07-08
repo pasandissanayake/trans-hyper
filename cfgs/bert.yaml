@@ -57,16 +57,18 @@ datasets:
   data_root: ./data/
   n_shots: 5
   n_queries: 50
+  test_ratio: 0.2
+  validation_ratio: 0.2
 
   list_combine_train: # list of datasets to combine
-    - adult
+    - blood
+    - diabetes
 
   list_combine_val: # list of datasets to combine for validation
-    - adult
-    - diabetes
+    - blood
   
   list_combine_test: # list of datasets to combine for testing
-    - diabetes
+    - blood
   
   adult:
     name: adult
@@ -83,5 +85,9 @@ datasets:
     validation_size: 0.1
     n_features: 3
     str_template: "<example>This is the diabetes dataset. The final weight is {}. The capital gain is {}. The label is {}.</example>"
+
+  tabllm:
+    raw_data_path: "tabllm/data/datasets"
+    txt_data_path: "tabllm/data/datasets_serialized"
 
 
