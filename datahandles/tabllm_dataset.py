@@ -4,7 +4,7 @@ from datahandles.dataset_utils import datahandles
 from tabllm import load_train_validation_test, load_dataset
 from datasets import load_from_disk
 from pathlib import Path
-from .comb_dataset import CombinedDataset, CombinedTextDataset, FewshotDataset
+from datahandles import CombinedDataset, CombinedTextDataset, FewshotDataset
 
 import pandas as pd
 import numpy as np
@@ -40,10 +40,13 @@ class TabLLMDataObject():
         
         self.all_ds_list = list(set(self.ds_list_dict['train'] + self.ds_list_dict['val'] + self.ds_list_dict['test']))
         self.raw_datapoints = [load_dataset(dataset_name=ds_name, data_dir=Path(f"{self.raw_data_path}/{ds_name}")) for ds_name in self.all_ds_list]
-        self.txt_datapoints = [pd.DataFrame(load_from_disk(f"{self.txt_data_path}/{ds_name}")) for ds_name in self.all_ds_list]
+        self.txt_datapoints = [pd.DataFrame(load_from_disk(f"{self.txt_data_path}/{ds_name}")) for ds_name in self.all_ds_list] # type: ignore
 
         # create splits
-        self.split_datapoints = [self.split_and_concat_dfs(raw_dps, txt_dps, test_ratio=self.test_ratio, val_ratio=self.val_ratio) for raw_dps, txt_dps in zip(self.raw_datapoints, self.txt_datapoints)]
+        self.split_datapoints = [self.split_and_concat_dfs(raw_dps, txt_dps, 
+                                                           test_ratio=self.test_ratio, 
+                                                           val_ratio=self.val_ratio,
+                                                           seed=np.random.randint(low=0, high=100)) for raw_dps, txt_dps in zip(self.raw_datapoints, self.txt_datapoints)]
 
         self.data = {}
         for split in self.splits:

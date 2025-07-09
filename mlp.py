@@ -6,34 +6,37 @@ from sklearn.datasets import make_classification
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import numpy as np
+import argparse
+import os
+
+from utils import Config, ConfigObject
+from datahandles import TabLLMDataObject, CombinedTabLLMTextDataset
 
 # --------- CONFIGURATION ---------
-input_dim = 20
-hidden_dim = 64
-num_hidden_layers = 3
-output_dim = 5
-use_dropout = True
+input_dim = 8
+hidden_dim = 10
+num_hidden_layers = 2
+output_dim = 2
+use_dropout = False
 dropout_prob = 0.5
 batch_size = 64
 num_epochs = 20
 learning_rate = 0.001
-test_split = 0.2
+cfg_path = 'cfgs/bert.yaml'
 # ---------------------------------
 
-# --------- DATA GENERATION ---------
-X, y = make_classification(n_samples=5000, n_features=input_dim, n_classes=output_dim, n_informative=10)
-X = StandardScaler().fit_transform(X)
-X = torch.tensor(X, dtype=torch.float32)
-y = torch.tensor(y, dtype=torch.long)
 
-dataset = TensorDataset(X, y)
-test_size = int(len(dataset) * test_split)
-train_size = len(dataset) - test_size
-train_dataset, test_dataset = random_split(dataset, [train_size, test_size])
 
-train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=batch_size)
-# -----------------------------------
+# --------- PARSING ARGS AND CONFIGS --------
+def make_cfg(path):
+    cfg = Config(path)
+    setattr(cfg, "env", ConfigObject())
+    setattr(cfg.env, "total_gpus", ConfigObject(torch.cuda.device_count())) # type: ignore
+    return cfg
+# -------------------------------------------
+
+
+
 
 # --------- MODEL DEFINITION ---------
 class MLP(nn.Module):
@@ -57,6 +60,21 @@ class MLP(nn.Module):
     def forward(self, x):
         return self.net(x)
 
+
+# --------- DATA GENERATION ---------
+cfg = make_cfg(cfg_path)
+tabllm_do = TabLLMDataObject(cfg)
+train_dataset = CombinedTabLLMTextDataset(cfg, 'train', tabllm_do.split_datapoints)
+test_dataset = CombinedTabLLMTextDataset(cfg, 'test', tabllm_do.split_datapoints)
+
+test_size = len(test_dataset)
+train_size = len(train_dataset)
+print(f"test size:{test_size}, train size:{train_size}")
+
+train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=batch_size)
+# -----------------------------------
+
 model = MLP(input_dim, hidden_dim, num_hidden_layers, output_dim, use_dropout, dropout_prob)
 # -----------------------------------
 
@@ -69,7 +87,9 @@ def evaluate(loader):
     correct = 0
     total = 0
     with torch.no_grad():
-        for inputs, labels in loader:
+        for batch in loader:
+            inputs = batch['x']
+            labels = batch['y']
             outputs = model(inputs)
             _, preds = torch.max(outputs, 1)
             correct += (preds == labels).sum().item()
@@ -80,7 +100,11 @@ def evaluate(loader):
 # --------- TRAINING LOOP ---------
 for epoch in range(num_epochs):
     model.train()
-    for inputs, labels in train_loader:
+    for batch in train_loader:
+        # print(f"batch:{batch}")
+        inputs = batch['x']
+        labels = batch['y']
+        # print(f"inputs:{inputs}, labels:{labels}")
         optimizer.zero_grad()
         outputs = model(inputs)
         loss = criterion(outputs, labels)
