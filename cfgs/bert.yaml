@@ -69,6 +69,7 @@ datasets:
   
   list_combine_test: # list of datasets to combine for testing
     - blood
+    - diabetes
   
   adult:
     name: adult

@@ -54,15 +54,17 @@ def main():
     train_ds = tabllm_data.data['train']
     test_ds = tabllm_data.data['test']
 
-    for i in range(5):
-        print(train_ds[i])
-        print('**********************************')
+    print(f"number of features: {test_ds.shape[1]}")
+
+    # for i in range(5):
+    #     print(train_ds[i]['shots'])
+    #     print('**********************************')
 
     # train_ds = FewshotDataset(cfg, 'train', n_shots=cfg.datasets.n_shots(), n_queries=cfg.datasets.n_queries()) # type: ignore
     # test_ds = FewshotDataset(cfg, 'test', n_shots=cfg.datasets.n_shots(), n_queries=cfg.datasets.n_queries()) # type: ignore
     trainer = trainers[cfg.trainer.name()](0, cfg, train_ds, test_ds) # type: ignore
     
-    # trainer.run()
+    trainer.run()
 
 
 if __name__ == "__main__":

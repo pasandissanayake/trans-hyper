@@ -144,7 +144,7 @@ class CombinedTabLLMTextDataset(CombinedTextDataset):
         raw_x[:self.n_features[i]] = new_row.to_numpy(dtype=np.float32)
 
         if get_text:
-            return f"{txt_x}. The label is {raw_y==1}."
+            return f"Example: {txt_x} The label is {raw_y==1}.\n\n "
         else:
             return {'x': raw_x, 'y': raw_y}  # Return the raw input and label without text
     

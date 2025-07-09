@@ -524,6 +524,143 @@ def load_dataset(dataset_name, data_dir):
     return dataset
 
 
+
+def load_and_preprocess_dataset(dataset_name, data_dir):
+    def byte_to_string_columns(data):
+        for col, dtype in data.dtypes.items():
+            if dtype == object:  # Only process byte object columns.
+                data[col] = data[col].apply(lambda x: x.decode("utf-8"))
+        return data
+
+    if dataset_name == "creditg":
+        dataset = pd.DataFrame(loadarff(data_dir / 'dataset_31_credit-g.arff')[0])
+        dataset = byte_to_string_columns(dataset)
+        dataset.rename(columns={'class': 'label'}, inplace=True)
+        dataset['label'] = dataset['label'] == 'good'
+
+    elif dataset_name == "blood":
+        columns = {'V1': 'recency', 'V2': 'frequency', 'V3': 'monetary', 'V4': 'time', 'Class': 'label'}
+        dataset = pd.DataFrame(loadarff(data_dir / 'php0iVrYT.arff')[0])
+        dataset = byte_to_string_columns(dataset)
+        dataset.rename(columns=columns, inplace=True)
+        dataset['label'] = dataset['label'] == '2'
+        
+    elif dataset_name == "bank":
+        columns = ['age', 'job', 'marital', 'education', 'default', 'balance', 'housing', 'loan', 'contact', 'day',
+                   'month', 'duration', 'campaign', 'pdays', 'previous', 'poutcome']
+        columns = {'V' + str(i + 1): v for i, v in enumerate(columns)}
+        dataset = pd.DataFrame(loadarff(data_dir / 'phpkIxskf.arff')[0])
+        dataset = byte_to_string_columns(dataset)
+        dataset.rename(columns=columns, inplace=True)
+        dataset.rename(columns={'Class': 'label'}, inplace=True)
+        dataset['label'] = dataset['label'] == '2'
+        
+    elif dataset_name == "jungle":
+        dataset = pd.DataFrame(loadarff(data_dir / 'jungle_chess_2pcs_raw_endgame_complete.arff')[0])
+        dataset = byte_to_string_columns(dataset)
+        dataset.rename(columns={'class': 'label'}, inplace=True)
+        dataset['label'] = dataset['label'] == 'w'  # Does white win?
+        
+    elif dataset_name == "calhousing":
+        dataset = pd.DataFrame(loadarff(data_dir / 'houses.arff')[0])
+        dataset = byte_to_string_columns(dataset)
+        dataset.rename(columns={'median_house_value': 'label'}, inplace=True)
+        # Make binary task by labelling upper half as true
+        median_price = dataset['label'].median()
+        dataset['label'] = dataset['label'] > median_price
+        
+    elif dataset_name == "income":
+        columns = ['age', 'workclass', 'fnlwgt', 'education', 'education_num', 'marital_status', 'occupation',
+                   'relationship', 'race', 'sex', 'capital_gain', 'capital_loss', 'hours_per_week',
+                   'native_country', 'label']
+
+        def strip_string_columns(df):
+            df[df.select_dtypes(['object']).columns] = df.select_dtypes(['object']).apply(lambda x: x.str.strip())
+
+        dataset_train = pd.read_csv(data_dir / 'adult.data', names=columns, na_values=['?', ' ?'])
+        dataset_train = dataset_train.drop(columns=['fnlwgt', 'education_num'])
+        original_size = len(dataset_train)
+        strip_string_columns(dataset_train)
+        # Multiply all dollar columns by two to adjust for inflation
+        # dataset_train[['capital_gain', 'capital_loss']] = (1.79 * dataset_train[['capital_gain', 'capital_loss']]).astype(int)
+        dataset_train['label'] = dataset_train['label'] == '>50K'
+
+        dataset_test = pd.read_csv(data_dir / 'adult.test', names=columns, na_values=['?', ' ?'])
+        dataset_test = dataset_test.drop(columns=['fnlwgt', 'education_num'])
+        strip_string_columns(dataset_test)
+        # Note label string in test set contains full stop
+        # dataset_test[['capital_gain', 'capital_loss']] = (1.79 * dataset_test[['capital_gain', 'capital_loss']]).astype(int)
+        dataset_test['label'] = dataset_test['label'] == '>50K.'
+
+        dataset_train, dataset_valid = train_test_split(dataset_train, test_size=0.20, random_state=1)
+        dataset = dataset_train
+        assert len(dataset_train) + len(dataset_valid) == original_size
+
+    elif dataset_name == "car":
+        columns = ['buying', 'maint', 'doors', 'persons', 'lug_boot', 'safety_dict', 'label']
+        dataset = pd.read_csv(data_dir / 'car.data', names=columns)
+        original_size = len(dataset)
+        label_dict = {'unacc': 0, 'acc': 1, 'good': 2, 'vgood': 3}
+        dataset['label'] = dataset['label'].replace(label_dict)
+        
+    elif dataset_name == "voting":
+        columns = ['label', 'handicapped_infants', 'water_project_cost_sharing', 'adoption_of_the_budget_resolution',
+                   'physician_fee_freeze', 'el_salvador_aid', 'religious_groups_in_schools', 'anti_satellite_test_ban',
+                   'aid_to_nicaraguan_contras', 'mx_missile', 'immigration', 'synfuels_corporation_cutback',
+                   'education_spending', 'superfund_right_to_sue', 'crime', 'duty_free_exports',
+                   'export_administration_act_south_africa']
+        dataset = pd.read_csv(data_dir / 'house-votes-84.data', names=columns, na_values=['?'])
+        original_size = len(dataset)
+        dataset['label'] = np.where(dataset['label'] == 'democrat', 1, 0)
+        
+    elif dataset_name == "wine":
+        columns = ['fixed_acidity', 'volatile_acidity', 'citric_acid', 'residual_sugar', 'chlorides',
+                   'free_sulfur_dioxide', 'total_sulfur_dioxide', 'density', 'pH', 'sulphates', 'alcohol', 'quality']
+        dataset = pd.read_csv(data_dir / 'winequality-red.csv', names=columns, skiprows=[0])
+        original_size = len(dataset)
+        # Adopt grouping from: https://www.kaggle.com/code/vishalyo990/prediction-of-quality-of-wine
+        bins = (2, 6.5, 8)
+        dataset['quality'] = pd.cut(dataset['quality'], bins=bins, labels=[0, 1]).astype(int)  # bad, good
+        dataset = dataset.rename(columns={'quality': 'label'})
+        
+    elif dataset_name == "titanic":
+        # Only use training set since no labels for test set
+        dataset = pd.read_csv(data_dir / 'train.csv')
+        original_size = len(dataset)
+        dataset = dataset.rename(columns={'Survived': 'label'})
+        
+    elif dataset_name == "heart":
+        dataset = pd.read_csv(data_dir / 'heart.csv')
+        original_size = len(dataset)
+        dataset = dataset.rename(columns={'HeartDisease': 'label'})
+        
+    elif dataset_name == "diabetes":
+        dataset = pd.read_csv(data_dir / 'diabetes.csv')
+        original_size = len(dataset)
+        dataset = dataset.rename(columns={'Outcome': 'label'})
+        
+    else:
+        raise ValueError("Dataset not found")
+
+    # For final experiments, ensure correct numbers of features for each dataset
+    dataset_specs = {
+        'income': 13,
+        'car': 7,
+        'heart': 12,
+        'diabetes': 9,
+        'creditg': 21,
+        'blood': 5,
+        'bank': 17,
+        'jungle': 7,
+        'wine': 12,
+        'calhousing': 9
+    }
+    assert dataset_name in dataset_specs.keys() and len(dataset.columns) == dataset_specs[dataset_name]
+
+    return dataset
+
+
+
 def output_linear_classifier_features(examples, output_dir, dataset):
     def remove_constants(data):
         return data[[c for c in data if data[c].nunique() > 1]]
