@@ -140,7 +140,7 @@ class CombinedTabLLMTextDataset(CombinedTextDataset):
         new_row = row.drop(TEXT_COL_NAME)
         raw_y = np.int64(new_row[TARGET_COL_NAME])
         new_row = new_row.drop(TARGET_COL_NAME)
-        raw_x = np.zeros(self.max_n_features)
+        raw_x = np.zeros(self.max_n_features, dtype=np.float32)
         raw_x[:self.n_features[i]] = new_row.to_numpy(dtype=np.float32)
 
         if get_text:

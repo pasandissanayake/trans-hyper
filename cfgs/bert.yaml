@@ -21,7 +21,7 @@ hypernet:
 # hyponet configuration
 hyponet:
   model: mlp
-  in_dim: 3
+  in_dim: 8
   out_dim: 2
   hidden_dim: 10
   depth: 4
@@ -39,7 +39,7 @@ tokenizer:
 # trainer configuration
 trainer:
   name: bert_trainer
-  batch_size: 128
+  batch_size: 10
   n_workers: 1
   max_epoch: 20
   eval_epoch: 4
@@ -56,12 +56,11 @@ trainer:
 datasets:
   data_root: ./data/
   n_shots: 5
-  n_queries: 50
+  n_queries: 10
   test_ratio: 0.2
   validation_ratio: 0.2
 
   list_combine_train: # list of datasets to combine
-    - blood
     - diabetes
 
   list_combine_val: # list of datasets to combine for validation
@@ -69,7 +68,6 @@ datasets:
   
   list_combine_test: # list of datasets to combine for testing
     - blood
-    - diabetes
   
   adult:
     name: adult

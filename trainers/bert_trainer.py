@@ -67,7 +67,8 @@ class BertTrainer(BaseTrainer):
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        return {'loss': loss.item()}
+        acc = self.compute_accuracy(data)
+        return {'loss': loss.item(), 'acc': acc}
 
     def evaluate_step(self, data):
         with torch.no_grad():

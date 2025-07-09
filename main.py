@@ -54,7 +54,7 @@ def main():
     train_ds = tabllm_data.data['train']
     test_ds = tabllm_data.data['test']
 
-    print(f"number of features: {test_ds.shape[1]}")
+    print(f"number of features: {test_ds[0]['queries_x'].shape}")
 
     # for i in range(5):
     #     print(train_ds[i]['shots'])

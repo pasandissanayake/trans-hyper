@@ -155,7 +155,7 @@ class BaseTrainer(ABC):
                 self.train_ds, self.cfg.trainer.batch_size(), self.cfg.trainer.n_workers(), shuffle=True, drop_last=True)
             self.dist_samplers.append(train_sampler)
         
-        if self.train_ds is not None:
+        if self.test_ds is not None:
             self.test_loader, test_sampler = make_distributed_loader(
                 self.test_ds, self.cfg.trainer.batch_size(), self.cfg.trainer.n_workers(), shuffle=False, drop_last=False)
             self.dist_samplers.append(test_sampler)
