@@ -55,7 +55,7 @@ trainer:
 # dataset configuration
 datasets:
   data_root: ./data/
-  n_shots: 10
+  n_shots: 3
   n_queries: 20
   test_ratio: 0.3
   validation_ratio: 0.2
@@ -64,6 +64,7 @@ datasets:
     - bank
     - blood
     - income
+    - calhousing
 
   list_combine_val: # list of datasets to combine for validation
     - blood
