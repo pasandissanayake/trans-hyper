@@ -5,17 +5,18 @@ from tabllm import load_train_validation_test, load_dataset
 from datasets import load_from_disk
 from pathlib import Path
 from datahandles import CombinedDataset, CombinedTextDataset, FewshotDataset
+from utils import Config
 
 import pandas as pd
 import numpy as np
-from typing import Tuple
+from typing import Tuple, List, Dict
 
 TEXT_COL_NAME = "note"
 TARGET_COL_NAME = "label"
 
 
 class TabLLMDataObject():
-    def __init__(self, cfg):
+    def __init__(self, cfg, set_hyponet_in_dim:bool):
         self.splits = ['train', 'val', 'test']
 
         self.cfg = cfg
@@ -42,21 +43,35 @@ class TabLLMDataObject():
         self.raw_datapoints = [load_dataset(dataset_name=ds_name, data_dir=Path(f"{self.raw_data_path}/{ds_name}")) for ds_name in self.all_ds_list]
         self.txt_datapoints = [pd.DataFrame(load_from_disk(f"{self.txt_data_path}/{ds_name}")) for ds_name in self.all_ds_list] # type: ignore
 
+        self.n_features = [ds.shape[1]-1 for ds in self.raw_datapoints] # subtract 1 for the label
+        self.max_n_features = max(self.n_features)
+
+        if self.debug:
+            print((f"TabLLMDataObject initialized with {len(self.ds_list_dict['train'])} training set(s),"
+                  f"{len(self.ds_list_dict['val'])} validation set(s), and {len(self.ds_list_dict['test'])} test set(s).\n"
+                  f"Maximum number of features across all datasets: {self.max_n_features}"))
+            
+        if set_hyponet_in_dim:
+            self.cfg.hyponet.in_dim(self.max_n_features) # type: ignore
+            if self.debug:
+                print(f"Hyponet in_dim set to max number of features (={self.max_n_features})")
+        
         # create splits
-        self.split_datapoints = [self.split_and_concat_dfs(raw_dps, txt_dps, 
+        self.split_datapoints = {ds_name: self.split_and_concat_dfs(raw_dps, txt_dps, 
                                                            test_ratio=self.test_ratio, 
                                                            val_ratio=self.val_ratio,
-                                                           seed=np.random.randint(low=0, high=100)) for raw_dps, txt_dps in zip(self.raw_datapoints, self.txt_datapoints)]
-
+                                                           seed=np.random.randint(low=0, high=100)) 
+                                                           for ds_name, raw_dps, txt_dps in zip(self.all_ds_list, self.raw_datapoints, self.txt_datapoints)}
+        
         self.data = {}
         for split in self.splits:
             self.data[split] = FewshotTabLLMDataset(cfg=self.cfg,
                                              split=split,
-                                             datapoints=self.split_datapoints,
+                                             datapoints=[self.split_datapoints[key] for key in self.ds_list_dict[split]],
+                                             max_n_features = self.max_n_features,
                                              n_shots=self.n_shots,
                                              n_queries=self.n_queries)
         
-
     def split_and_concat_dfs(
             self,
             df_features: pd.DataFrame,
@@ -75,9 +90,6 @@ class TabLLMDataObject():
             train_df, val_df, test_df — each containing features + a 'note' column
         """
         train_ratio: float = 1 - val_ratio - test_ratio
-
-        print(df_features[0:3])
-        print(df_notes[0:3])
 
         assert len(df_features) == len(df_notes), f"DataFrames must be the same length. Got {len(df_features)} and {len(df_notes)}"
         assert note_column_name in df_notes.columns, f"'{note_column_name}' column must exist in df_notes"
@@ -109,11 +121,8 @@ class TabLLMDataObject():
         }
 
 
-    
-
-
 class CombinedTabLLMTextDataset(CombinedTextDataset):
-    def __init__(self, cfg, split: str, datapoints:list[dict[str, pd.DataFrame]]):
+    def __init__(self, cfg, split: str, datapoints:list[dict[str, pd.DataFrame]], max_n_features:int):
         self.cfg = cfg
         self.split = split
         self.debug = cfg.debug_datasets() or cfg.debug()
@@ -123,7 +132,11 @@ class CombinedTabLLMTextDataset(CombinedTextDataset):
         self.total_length = sum(self.lengths)
 
         self.n_features = [ds[self.split].shape[1]-2 for ds in self.datapoints] # subtract 2 for note and label
-        self.max_n_features = max(self.n_features)
+        if max_n_features < 1:
+            self.max_n_features = max(self.n_features)
+        else:
+            self.max_n_features = max_n_features
+            assert np.all(np.array(self.n_features) <= self.max_n_features), f"specified max number of features (={max_n_features}) is less than the available number of features (={self.n_features})"
 
     def __len__(self):
         return self.total_length
@@ -152,16 +165,15 @@ class CombinedTabLLMTextDataset(CombinedTextDataset):
             return {'x': raw_x, 'y': raw_y}  # Return the raw input and label without text
     
 
-
 class FewshotTabLLMDataset(FewshotDataset):
-    def __init__(self, cfg, split: str, datapoints:list[dict[str, pd.DataFrame]], n_shots: int, n_queries: int):
+    def __init__(self, cfg, split: str, datapoints:list[dict[str, pd.DataFrame]], max_n_features:int, n_shots: int, n_queries: int):
         self.cfg = cfg
         self.split = split
         self.n_shots = n_shots
         self.n_queries = n_queries
         self.block_len = self.n_shots + self.n_queries
         
-        self.combined_dataset = CombinedTabLLMTextDataset(self.cfg, self.split, datapoints)
+        self.combined_dataset = CombinedTabLLMTextDataset(self.cfg, self.split, datapoints, max_n_features)
         self.combds_length = len(self.combined_dataset)
         if self.combds_length < self.block_len:
             raise ValueError(f"Not enough samples in combined dataset for few-shot learning. Required: {self.block_len}, Available: {self.combds_length}")

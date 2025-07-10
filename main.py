@@ -50,11 +50,9 @@ def main():
 
     if cfg.debug(): print('UNIVERSAL DEBUG MODE ENABLED') # type: ignore
 
-    tabllm_data = TabLLMDataObject(cfg)
+    tabllm_data = TabLLMDataObject(cfg=cfg, set_hyponet_in_dim=True)
     train_ds = tabllm_data.data['train']
     test_ds = tabllm_data.data['test']
-
-    print(f"number of features: {test_ds[0]['queries_x'].shape}")
 
     # for i in range(5):
     #     print(train_ds[i]['shots'])
