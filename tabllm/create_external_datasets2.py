@@ -51,15 +51,26 @@ cat_idx_dict = {
 bin_num = 10
 
 def main():
+    """
+    args:
+        --seed: random seed for reproducibility
+        --datadir: path for raw datasets
+        --dataset: dataset names to serialize
+        --outdir: path for output directory
+        --shuffled: shuffle data
+        --tabletotext:
+        --t0serialization:
+    """
+
     args = parse_args()
     set_seed(args.seed)
     logging.basicConfig(level=logging.INFO)
 
     # Configuration
-    data_dir = Path("./data/datasets")
+    data_dir = Path(args.datadir)
     data_dir = data_dir / args.dataset
     temp_output = 'dataset-generation-' + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    output_dir = Path("./data/test/datasets_serialized") / temp_output
+    output_dir = Path(args.outdir) / temp_output
     if not args.debug:
         os.mkdir(output_dir)
     logger.info(f"Generate dataset {args.dataset}.")
@@ -72,29 +83,12 @@ def main():
                    ('_values' if args.values else '') + \
                    ('_shuffled' if args.shuffled else '') + \
                    ('_importance' if args.feature_importance else '')
-    dataset = load_train_validation_test(args.dataset, data_dir)
-
-    if args.debug:
-        dataset['train'] = dataset['train'].sample(min(10, len(dataset['train'])))
-        dataset['validation'] = dataset['validation'].sample(min(5, len(dataset['validation'])))
-        dataset['test'] = dataset['test'].sample(min(5, len(dataset['test'])))
-    # logger.info(f"  Cohort size: {len(dataset['train'])}, {len(dataset['validation'])}, {len(dataset['test'])}")
-
-    if args.feature_importance:
-        # Simply combine all examples and create a list of features as covariates of the linear model.
-        dataset['train'] = pd.concat([dataset[k] for k in dataset.keys()])
-        dataset['validation'] = dataset['validation'].sample(0)
-        dataset['test'] = dataset['train'].sample(0)
-        # For each of them generate all feature values
-        output_linear_classifier_features(dataset['train'], output_dir, args.dataset)
+    dataset = load_dataset(args.dataset, data_dir)
 
     # template, template_config = None, None
     template = eval('template_' + dataset_name)
     template_config = eval('template_config_' + dataset_name)
     note_generator = NoteTemplate(template, **template_config)
-
-    # External datasets are now split later
-    dataset = pd.concat(list(dataset.values()), ignore_index=True)
 
     # Shuffled: shuffle each feature column separately
     if args.shuffled:
@@ -231,166 +225,6 @@ def main():
         dataset.save_to_disk(output_dir / dataset_name)
 
 
-def load_train_validation_test(dataset_name, data_dir, test_size, val_size):
-    # Load existing data, put into train, validation, test and create label
-    def train_validation_test_split(data):
-        # Don't want to shuffle bc done later with right seed to make it identical with external evaluation
-        data_train, data_test = train_test_split(data, test_size=test_size, shuffle=False)
-        data_train, data_valid = train_test_split(data_train, test_size=val_size / (1 - test_size), shuffle=False)
-        return data_train, data_valid, data_test
-
-    def byte_to_string_columns(data):
-        for col, dtype in data.dtypes.items():
-            if dtype == object:  # Only process byte object columns.
-                data[col] = data[col].apply(lambda x: x.decode("utf-8"))
-        return data
-
-    if dataset_name == "creditg":
-        dataset = pd.DataFrame(loadarff(data_dir / 'dataset_31_credit-g.arff')[0])
-        dataset = byte_to_string_columns(dataset)
-        dataset.rename(columns={'class': 'label'}, inplace=True)
-        dataset['label'] = dataset['label'] == 'good'
-        dataset_train, dataset_valid, dataset_test = train_validation_test_split(dataset)
-
-    elif dataset_name == "blood":
-        columns = {'V1': 'recency', 'V2': 'frequency', 'V3': 'monetary', 'V4': 'time', 'Class': 'label'}
-        dataset = pd.DataFrame(loadarff(data_dir / 'php0iVrYT.arff')[0])
-        dataset = byte_to_string_columns(dataset)
-        dataset.rename(columns=columns, inplace=True)
-        dataset['label'] = dataset['label'] == '2'
-        dataset_train, dataset_valid, dataset_test = train_validation_test_split(dataset)
-
-    elif dataset_name == "bank":
-        columns = ['age', 'job', 'marital', 'education', 'default', 'balance', 'housing', 'loan', 'contact', 'day',
-                   'month', 'duration', 'campaign', 'pdays', 'previous', 'poutcome']
-        columns = {'V' + str(i + 1): v for i, v in enumerate(columns)}
-        dataset = pd.DataFrame(loadarff(data_dir / 'phpkIxskf.arff')[0])
-        dataset = byte_to_string_columns(dataset)
-        dataset.rename(columns=columns, inplace=True)
-        dataset.rename(columns={'Class': 'label'}, inplace=True)
-        dataset['label'] = dataset['label'] == '2'
-        dataset_train, dataset_valid, dataset_test = train_validation_test_split(dataset)
-
-    elif dataset_name == "jungle":
-        dataset = pd.DataFrame(loadarff(data_dir / 'jungle_chess_2pcs_raw_endgame_complete.arff')[0])
-        dataset = byte_to_string_columns(dataset)
-        dataset.rename(columns={'class': 'label'}, inplace=True)
-        dataset['label'] = dataset['label'] == 'w'  # Does white win?
-        dataset_train, dataset_valid, dataset_test = train_validation_test_split(dataset)
-
-    elif dataset_name == "calhousing":
-        dataset = pd.DataFrame(loadarff(data_dir / 'houses.arff')[0])
-        dataset = byte_to_string_columns(dataset)
-        dataset.rename(columns={'median_house_value': 'label'}, inplace=True)
-        # Make binary task by labelling upper half as true
-        median_price = dataset['label'].median()
-        dataset['label'] = dataset['label'] > median_price
-        dataset_train, dataset_valid, dataset_test = train_validation_test_split(dataset)
-
-    elif dataset_name == "income":
-        columns = ['age', 'workclass', 'fnlwgt', 'education', 'education_num', 'marital_status', 'occupation',
-                   'relationship', 'race', 'sex', 'capital_gain', 'capital_loss', 'hours_per_week',
-                   'native_country', 'label']
-
-        def strip_string_columns(df):
-            df[df.select_dtypes(['object']).columns] = df.select_dtypes(['object']).apply(lambda x: x.str.strip())
-
-        dataset_train = pd.read_csv(data_dir / 'adult.data', names=columns, na_values=['?', ' ?'])
-        dataset_train = dataset_train.drop(columns=['fnlwgt', 'education_num'])
-        original_size = len(dataset_train)
-        strip_string_columns(dataset_train)
-        # Multiply all dollar columns by two to adjust for inflation
-        # dataset_train[['capital_gain', 'capital_loss']] = (1.79 * dataset_train[['capital_gain', 'capital_loss']]).astype(int)
-        dataset_train['label'] = dataset_train['label'] == '>50K'
-
-        dataset_test = pd.read_csv(data_dir / 'adult.test', names=columns, na_values=['?', ' ?'])
-        dataset_test = dataset_test.drop(columns=['fnlwgt', 'education_num'])
-        strip_string_columns(dataset_test)
-        # Note label string in test set contains full stop
-        # dataset_test[['capital_gain', 'capital_loss']] = (1.79 * dataset_test[['capital_gain', 'capital_loss']]).astype(int)
-        dataset_test['label'] = dataset_test['label'] == '>50K.'
-
-        dataset_train, dataset_valid = train_test_split(dataset_train, test_size=0.20, random_state=1)
-        dataset = dataset_train
-        assert len(dataset_train) + len(dataset_valid) == original_size
-
-    elif dataset_name == "car":
-        columns = ['buying', 'maint', 'doors', 'persons', 'lug_boot', 'safety_dict', 'label']
-        dataset = pd.read_csv(data_dir / 'car.data', names=columns)
-        original_size = len(dataset)
-        label_dict = {'unacc': 0, 'acc': 1, 'good': 2, 'vgood': 3}
-        dataset['label'] = dataset['label'].replace(label_dict)
-        dataset_train, dataset_valid, dataset_test = train_validation_test_split(dataset)
-        assert len(dataset_train) + len(dataset_valid) + len(dataset_test) == original_size
-
-    elif dataset_name == "voting":
-        columns = ['label', 'handicapped_infants', 'water_project_cost_sharing', 'adoption_of_the_budget_resolution',
-                   'physician_fee_freeze', 'el_salvador_aid', 'religious_groups_in_schools', 'anti_satellite_test_ban',
-                   'aid_to_nicaraguan_contras', 'mx_missile', 'immigration', 'synfuels_corporation_cutback',
-                   'education_spending', 'superfund_right_to_sue', 'crime', 'duty_free_exports',
-                   'export_administration_act_south_africa']
-        dataset = pd.read_csv(data_dir / 'house-votes-84.data', names=columns, na_values=['?'])
-        original_size = len(dataset)
-        dataset['label'] = np.where(dataset['label'] == 'democrat', 1, 0)
-        dataset_train, dataset_valid, dataset_test = train_validation_test_split(dataset)
-        assert len(dataset_train) + len(dataset_valid) + len(dataset_test) == original_size
-
-    elif dataset_name == "wine":
-        columns = ['fixed_acidity', 'volatile_acidity', 'citric_acid', 'residual_sugar', 'chlorides',
-                   'free_sulfur_dioxide', 'total_sulfur_dioxide', 'density', 'pH', 'sulphates', 'alcohol', 'quality']
-        dataset = pd.read_csv(data_dir / 'winequality-red.csv', names=columns, skiprows=[0])
-        original_size = len(dataset)
-        # Adopt grouping from: https://www.kaggle.com/code/vishalyo990/prediction-of-quality-of-wine
-        bins = (2, 6.5, 8)
-        dataset['quality'] = pd.cut(dataset['quality'], bins=bins, labels=[0, 1]).astype(int)  # bad, good
-        dataset = dataset.rename(columns={'quality': 'label'})
-        dataset_train, dataset_valid, dataset_test = train_validation_test_split(dataset)
-        assert len(dataset_train) + len(dataset_valid) + len(dataset_test) == original_size
-
-    elif dataset_name == "titanic":
-        # Only use training set since no labels for test set
-        dataset = pd.read_csv(data_dir / 'train.csv')
-        original_size = len(dataset)
-        dataset = dataset.rename(columns={'Survived': 'label'})
-        dataset_train, dataset_valid, dataset_test = train_validation_test_split(dataset)
-        assert len(dataset_train) + len(dataset_valid) + len(dataset_test) == original_size
-
-    elif dataset_name == "heart":
-        dataset = pd.read_csv(data_dir / 'heart.csv')
-        original_size = len(dataset)
-        dataset = dataset.rename(columns={'HeartDisease': 'label'})
-        dataset_train, dataset_valid, dataset_test = train_validation_test_split(dataset)
-        assert len(dataset_train) + len(dataset_valid) + len(dataset_test) == original_size
-
-    elif dataset_name == "diabetes":
-        dataset = pd.read_csv(data_dir / 'diabetes.csv')
-        original_size = len(dataset)
-        dataset = dataset.rename(columns={'Outcome': 'label'})
-        dataset_train, dataset_valid, dataset_test = train_validation_test_split(dataset)
-        assert len(dataset_train) + len(dataset_valid) + len(dataset_test) == original_size
-
-    else:
-        raise ValueError("Dataset not found")
-
-    # For final experiments, ensure correct numbers of features for each dataset
-    dataset_specs = {
-        'income': 13,
-        'car': 7,
-        'heart': 12,
-        'diabetes': 9,
-        'creditg': 21,
-        'blood': 5,
-        'bank': 17,
-        'jungle': 7,
-        'wine': 12,
-        'calhousing': 9
-    }
-    assert dataset_name in dataset_specs.keys() and len(dataset.columns) == dataset_specs[dataset_name]
-
-    dataset = {"train": dataset_train, "val": dataset_valid, "test": dataset_test}
-    return dataset
-
-
 def load_dataset(dataset_name, data_dir):
     def byte_to_string_columns(data):
         for col, dtype in data.dtypes.items():
@@ -458,9 +292,10 @@ def load_dataset(dataset_name, data_dir):
         # dataset_test[['capital_gain', 'capital_loss']] = (1.79 * dataset_test[['capital_gain', 'capital_loss']]).astype(int)
         dataset_test['label'] = dataset_test['label'] == '>50K.'
 
-        dataset_train, dataset_valid = train_test_split(dataset_train, test_size=0.20, random_state=1)
-        dataset = dataset_train
-        assert len(dataset_train) + len(dataset_valid) == original_size
+        dataset = pd.concat([dataset_train, dataset_test])
+        # dataset_train, dataset_valid = train_test_split(dataset_train, test_size=0.20, random_state=1)
+        # dataset = dataset_train
+        # assert len(dataset_train) + len(dataset_valid) == original_size
 
     elif dataset_name == "car":
         columns = ['buying', 'maint', 'doors', 'persons', 'lug_boot', 'safety_dict', 'label']
@@ -526,8 +361,67 @@ def load_dataset(dataset_name, data_dir):
     return dataset
 
 
-
 def load_and_preprocess_dataset(dataset_name, data_dir):
+    dataset = load_dataset(dataset_name=dataset_name, data_dir=data_dir)
+    
+    if dataset_name == "creditg":
+        categorical = ['checking_status', 'credit_history', 'purpose', 'savings_status', 'employment', 'personal_status', 'other_parties', 'residence_since', 'property_magnitude', 'other_payment_plans', 'housing', 'job', 'own_telephone', 'foreign_worker']
+        numerical = ['num_dependents', 'existing_credits', 'installment_commitment', 'credit_amount', 'duration', 'age']
+
+    elif dataset_name == "blood":
+        categorical = []
+        numerical = ['recency', 'frequency', 'monetary', 'time']
+        
+    elif dataset_name == "bank":
+        categorical = ['job', 'marital', 'education', 'default', 'housing', 'loan', 'contact', 'month', 'poutcome']
+        numerical = ['age', 'balance', 'day', 'duration', 'campaign', 'pdays', 'previous']
+
+        
+    elif dataset_name == "jungle":
+        categorical = []
+        numerical = []
+        
+    elif dataset_name == "calhousing":
+        categorical = []
+        numerical = ['latitude', 'population', 'median_income', 'longitude', 'total_bedrooms', 'housing_median_age', 'households', 'total_rooms']
+        
+    elif dataset_name == "income":
+        categorical = ['workclass', 'education', 'marital_status', 'occupation', 'relationship', 'race', 'sex', 'native_country']
+        numerical = ['hours_per_week', 'capital_gain', 'capital_loss', 'age']
+
+    elif dataset_name == "car":
+        categorical = ['buying', 'maint', 'doors', 'persons', 'lug_boot', 'safety_dict']
+        numerical = []
+        
+    elif dataset_name == "voting":
+        categorical = []
+        numerical = []
+        
+    elif dataset_name == "wine":
+        categorical = []
+        numerical = []
+        
+    elif dataset_name == "titanic":
+        categorical = []
+        numerical = []
+        
+    elif dataset_name == "heart":
+        categorical = []
+        numerical = []
+        
+    elif dataset_name == "diabetes":
+        categorical = []
+        numerical = []
+        
+    else:
+        raise ValueError("Dataset not found")
+
+    dataset = preprocess_numcols(dataset, numerical)
+    dataset = preprocess_catcols(dataset, categorical)
+    return dataset
+
+
+def load_and_preprocess_dataset_old(dataset_name, data_dir):
     def byte_to_string_columns(data):
         for col, dtype in data.dtypes.items():
             if dtype == object:  # Only process byte object columns.
@@ -696,6 +590,7 @@ def preprocess_numcols(df: pd.DataFrame, numerical_cols: list) -> pd.DataFrame:
     df_processed[numerical_cols] = scaler.fit_transform(df_processed[numerical_cols])
     return df_processed
 
+
 def preprocess_catcols(df: pd.DataFrame, categorical_cols: list) -> pd.DataFrame:
     """
     One-hot encode specified categorical features in a dataframe.
@@ -713,6 +608,7 @@ def preprocess_catcols(df: pd.DataFrame, categorical_cols: list) -> pd.DataFrame
     df_processed = df.copy()
     df_encoded = pd.get_dummies(df_processed, columns=categorical_cols, drop_first=False)
     return df_encoded
+
 
 def output_linear_classifier_features(examples, output_dir, dataset):
     def remove_constants(data):
@@ -850,6 +746,14 @@ def parse_args():
     )
     parser.add_argument(
         "--dataset",
+        type=str
+    )
+    parser.add_argument(
+        "--datadir",
+        type=str
+    )
+    parser.add_argument(
+        "--outdir",
         type=str
     )
     parser.add_argument(

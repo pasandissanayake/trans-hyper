@@ -49,9 +49,9 @@ class BertTrainer(BaseTrainer):
         return accuracy
     
     def compute_accuracy(self, data):
-        tokenizer = models.make(model_name=self.cfg.tokenizer.model(), cfg=self.cfg, sd=None)
+        # tokenizer = models.make(model_name=self.cfg.tokenizer.model(), cfg=self.cfg, sd=None)
         shots = data['shots']
-        shots = tokenizer(shots)
+        shots = self.tokenizer(shots)
         input_ids = shots['input_ids'].cuda()
         attention_mask = shots['attention_mask'].cuda()
         queries_x = data['queries_x'].cuda()

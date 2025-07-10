@@ -61,15 +61,15 @@ datasets:
   validation_ratio: 0.2
 
   list_combine_train: # list of datasets to combine
-    - diabetes
+    - bank
     - blood
+    - income
 
   list_combine_val: # list of datasets to combine for validation
     - blood
   
   list_combine_test: # list of datasets to combine for testing
-    - blood
-    - diabetes
+    - calhousing
   
   adult:
     name: adult

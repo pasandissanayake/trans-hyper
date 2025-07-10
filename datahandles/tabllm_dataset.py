@@ -1,7 +1,7 @@
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from datahandles.dataset_utils import datahandles
-from tabllm import load_train_validation_test, load_dataset
+from tabllm import load_and_preprocess_dataset
 from datasets import load_from_disk
 from pathlib import Path
 from datahandles import CombinedDataset, CombinedTextDataset, FewshotDataset
@@ -40,7 +40,7 @@ class TabLLMDataObject():
                 raise ValueError(f"Invalid dataset list in {split} split: {self.ds_list_dict[split]}. Available datasets: {tabllm_ds_list}")
         
         self.all_ds_list = list(set(self.ds_list_dict['train'] + self.ds_list_dict['val'] + self.ds_list_dict['test']))
-        self.raw_datapoints = [load_dataset(dataset_name=ds_name, data_dir=Path(f"{self.raw_data_path}/{ds_name}")) for ds_name in self.all_ds_list]
+        self.raw_datapoints = [load_and_preprocess_dataset(dataset_name=ds_name, data_dir=Path(f"{self.raw_data_path}/{ds_name}")) for ds_name in self.all_ds_list]
         self.txt_datapoints = [pd.DataFrame(load_from_disk(f"{self.txt_data_path}/{ds_name}")) for ds_name in self.all_ds_list] # type: ignore
 
         self.n_features = [ds.shape[1]-1 for ds in self.raw_datapoints] # subtract 1 for the label
@@ -56,6 +56,8 @@ class TabLLMDataObject():
             if self.debug:
                 print(f"Hyponet in_dim set to max number of features (={self.max_n_features})")
         
+        print([(len(raw), len(txt)) for raw, txt in zip(self.raw_datapoints, self.txt_datapoints)])
+        
         # create splits
         self.split_datapoints = {ds_name: self.split_and_concat_dfs(raw_dps, txt_dps, 
                                                            test_ratio=self.test_ratio, 
@@ -63,6 +65,7 @@ class TabLLMDataObject():
                                                            seed=np.random.randint(low=0, high=100)) 
                                                            for ds_name, raw_dps, txt_dps in zip(self.all_ds_list, self.raw_datapoints, self.txt_datapoints)}
         
+
         self.data = {}
         for split in self.splits:
             self.data[split] = FewshotTabLLMDataset(cfg=self.cfg,
@@ -91,7 +94,7 @@ class TabLLMDataObject():
         """
         train_ratio: float = 1 - val_ratio - test_ratio
 
-        assert len(df_features) == len(df_notes), f"DataFrames must be the same length. Got {len(df_features)} and {len(df_notes)}"
+        assert df_features.shape[0] == df_notes.shape[0], f"DataFrames must be the same length. Got {df_features.shape[0]} and {df_notes.shape[0]}"
         assert note_column_name in df_notes.columns, f"'{note_column_name}' column must exist in df_notes"
         assert train_ratio >= 0, "Ratios must sum to 1.0"
 
