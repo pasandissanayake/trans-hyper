@@ -91,5 +91,6 @@ datasets:
   tabllm:
     raw_data_path: "tabllm/data/datasets"
     txt_data_path: "tabllm/data/datasets_serialized"
+    template_dir: "tabllm/templates"
 
 

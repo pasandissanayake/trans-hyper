@@ -9,10 +9,59 @@ from utils import Config
 
 import pandas as pd
 import numpy as np
-from typing import Tuple, List, Dict
+from typing import Tuple, List, Dict, Union
+
+import yaml
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+import os
 
 TEXT_COL_NAME = "note"
 TARGET_COL_NAME = "label"
+
+
+class Template():
+    def __init__(self, cfg, dataset_name):
+        self.cfg = cfg
+        self.dataset_name = dataset_name
+        self.template_file_path = Path(self.cfg.datasets.tabllm.template_dir()) / f"templates_{dataset_name}.yaml"
+
+        class CustomTagLoader(yaml.SafeLoader):
+            pass
+
+        # Add constructors for the specific tags you want to treat as regular mappings.
+        # This tells PyYAML to parse the content under these tags as a standard dictionary.
+        CustomTagLoader.add_constructor(u'!Template', CustomTagLoader.construct_mapping)
+        CustomTagLoader.add_constructor(u'!TemplateMetadata', CustomTagLoader.construct_mapping)
+
+        with open(self.template_file_path, 'r') as f:
+                template_data = yaml.load(f, Loader=CustomTagLoader)
+
+        template_id = list(template_data['templates'].keys())[0] # Get the first (and likely only) template ID
+        template_config = template_data['templates'][template_id]
+
+        jinja_string = template_config['jinja']
+        answer_choices_raw = template_config['answer_choices']
+
+        # Split answer choices into a list
+        self.answer_choices = [choice.strip() for choice in answer_choices_raw.split('|||')]
+
+        # Set up Jinja2 environment (no specific loader needed as we have the string directly)
+        env = Environment(
+            loader=FileSystemLoader(os.path.dirname(self.cfg.datasets.tabllm.template_dir()) or './'), # Use FileSystemLoader for relative includes, though not strictly needed here
+            autoescape=select_autoescape(['html', 'xml'])
+        )
+
+        # Load the template from the string
+        self.template = env.from_string(jinja_string)
+
+    def apply_template(self, note:str, label:str):
+        rendered_output = self.template.render(
+                note=note,
+                label=label,
+                answer_choices=self.answer_choices # Pass the list of answer choices
+            )
+        
+        return rendered_output
 
 
 class TabLLMDataObject():
@@ -41,7 +90,7 @@ class TabLLMDataObject():
         
         self.all_ds_list = list(set(self.ds_list_dict['train'] + self.ds_list_dict['val'] + self.ds_list_dict['test']))
         self.raw_datapoints = [load_and_preprocess_dataset(dataset_name=ds_name, data_dir=Path(f"{self.raw_data_path}/{ds_name}")) for ds_name in self.all_ds_list]
-        self.txt_datapoints = [pd.DataFrame(load_from_disk(f"{self.txt_data_path}/{ds_name}")) for ds_name in self.all_ds_list] # type: ignore
+        self.txt_datapoints = [ pd.DataFrame(load_from_disk(f"{self.txt_data_path}/{ds_name}")) for ds_name in self.all_ds_list] # type: ignore
 
         self.n_features = [ds.shape[1]-1 for ds in self.raw_datapoints] # subtract 1 for the label
         self.max_n_features = max(self.n_features)
@@ -59,10 +108,10 @@ class TabLLMDataObject():
         print([(len(raw), len(txt)) for raw, txt in zip(self.raw_datapoints, self.txt_datapoints)])
         
         # create splits
-        self.split_datapoints = {ds_name: self.split_and_concat_dfs(raw_dps, txt_dps, 
+        self.split_datapoints = {ds_name: {'data': self.split_and_concat_dfs(raw_dps, txt_dps, 
                                                            test_ratio=self.test_ratio, 
                                                            val_ratio=self.val_ratio,
-                                                           seed=np.random.randint(low=0, high=100)) 
+                                                           seed=np.random.randint(low=0, high=100)) , 'template': Template(self.cfg, ds_name)}
                                                            for ds_name, raw_dps, txt_dps in zip(self.all_ds_list, self.raw_datapoints, self.txt_datapoints)}
         
 
@@ -125,16 +174,16 @@ class TabLLMDataObject():
 
 
 class CombinedTabLLMTextDataset(CombinedTextDataset):
-    def __init__(self, cfg, split: str, datapoints:list[dict[str, pd.DataFrame]], max_n_features:int):
+    def __init__(self, cfg, split: str, datapoints:list[dict[str, Union[dict[str, pd.DataFrame],Template]]], max_n_features:int):
         self.cfg = cfg
         self.split = split
         self.debug = cfg.debug_datasets() or cfg.debug()
 
         self.datapoints = datapoints
-        self.lengths = [len(ds[self.split]) for ds in self.datapoints]
+        self.lengths = [len(ds['data'][self.split]) for ds in self.datapoints]
         self.total_length = sum(self.lengths)
 
-        self.n_features = [ds[self.split].shape[1]-2 for ds in self.datapoints] # subtract 2 for note and label
+        self.n_features = [ds['data'][self.split].shape[1]-2 for ds in self.datapoints] # subtract 2 for note and label
         if max_n_features < 1:
             self.max_n_features = max(self.n_features)
         else:
@@ -153,7 +202,8 @@ class CombinedTabLLMTextDataset(CombinedTextDataset):
             get_text = False
 
         i, ds_idx = self._get_dataset_idx(idx)
-        row = self.datapoints[i][self.split].iloc[ds_idx]
+        row = self.datapoints[i]['data'][self.split].iloc[ds_idx]
+        template = self.datapoints[i]['template']
 
         txt_x = row[TEXT_COL_NAME]
         new_row = row.drop(TEXT_COL_NAME)
@@ -163,13 +213,15 @@ class CombinedTabLLMTextDataset(CombinedTextDataset):
         raw_x[:self.n_features[i]] = new_row.to_numpy(dtype=np.float32)
 
         if get_text:
-            return f"Example: {txt_x} The label is {raw_y==1}.\n\n "
+            return f"Example: {template.apply_template(note=txt_x, label=str(raw_y))}"
         else:
             return {'x': raw_x, 'y': raw_y}  # Return the raw input and label without text
-    
+            
+
+
 
 class FewshotTabLLMDataset(FewshotDataset):
-    def __init__(self, cfg, split: str, datapoints:list[dict[str, pd.DataFrame]], max_n_features:int, n_shots: int, n_queries: int):
+    def __init__(self, cfg, split: str, datapoints:list[dict[str, Union[dict[str, pd.DataFrame],Template]]], max_n_features:int, n_shots: int, n_queries: int):
         self.cfg = cfg
         self.split = split
         self.n_shots = n_shots
