@@ -42,9 +42,9 @@ trainer:
   batch_size: 10
   n_workers: 1
   max_epoch: 25
-  eval_epoch: 4
+  eval_epoch: 1
   vis_epoch: 25
-  save_epoch: 5
+  save_epoch: 4
   optimizer:
     name: adam
     args:
@@ -64,7 +64,10 @@ datasets:
     - bank
     - blood
     - income
-    - calhousing
+    - car
+    - creditg
+    - diabetes
+    - jungle
 
   list_combine_val: # list of datasets to combine for validation
     - blood

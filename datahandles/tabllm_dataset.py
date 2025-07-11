@@ -39,28 +39,50 @@ class Template():
         template_id = list(template_data['templates'].keys())[0] # Get the first (and likely only) template ID
         template_config = template_data['templates'][template_id]
 
-        jinja_string = template_config['jinja']
+        full_jinja_template_str = template_config['jinja']
         answer_choices_raw = template_config['answer_choices']
 
         # Split answer choices into a list
         self.answer_choices = [choice.strip() for choice in answer_choices_raw.split('|||')]
 
+        # Split the full Jinja template string into prompt and answer parts
+        # This assumes '|||' is a delimiter for the template structure, not literal output.
+        jinja_parts = full_jinja_template_str.split('|||', 1) # Split only once
+
+        self.prompt_template_str = jinja_parts[0].strip()
+        self.answer_template_str = jinja_parts[1].strip() if len(jinja_parts) > 1 else ''
+        
         # Set up Jinja2 environment (no specific loader needed as we have the string directly)
-        env = Environment(
+        self.env = Environment(
             loader=FileSystemLoader(os.path.dirname(self.cfg.datasets.tabllm.template_dir()) or './'), # Use FileSystemLoader for relative includes, though not strictly needed here
             autoescape=select_autoescape(['html', 'xml'])
         )
 
-        # Load the template from the string
-        self.template = env.from_string(jinja_string)
+        # Render the prompt part
+        self.prompt_template = self.env.from_string(self.prompt_template_str)
 
-    def apply_template(self, note:str, label:str):
-        rendered_output = self.template.render(
-                note=note,
-                label=label,
-                answer_choices=self.answer_choices # Pass the list of answer choices
-            )
-        
+    def apply_template(self, note:str, label:int):
+        self.rendered_prompt = self.prompt_template.render(note=note) # Only note is relevant for prompt
+
+        # Render the answer part (if it exists)
+        rendered_answer = ""
+        if self.answer_template_str:
+            answer_template = self.env.from_string(self.answer_template_str)
+            rendered_answer = answer_template.render(label=label, answer_choices=self.answer_choices)
+        else:
+            # If no explicit answer template, just use the selected answer choice directly
+            if 0 <= label < len(self.answer_choices):
+                rendered_answer = self.answer_choices[label]
+            else:
+                raise IndexError(f"Label {label} is out of bounds for answer choices {self.answer_choices}.")
+
+        # Combine the rendered parts with '|||' as the explicit separator in the final output
+        # This ensures '|||' is always present as a separator if the template implies it.
+        if rendered_answer:
+            rendered_output = f"{self.rendered_prompt}\n|||\n{rendered_answer}"
+        else:
+            rendered_output = self.rendered_prompt # If there's no answer part, just return the prompt
+
         return rendered_output
 
 
@@ -213,7 +235,7 @@ class CombinedTabLLMTextDataset(CombinedTextDataset):
         raw_x[:self.n_features[i]] = new_row.to_numpy(dtype=np.float32)
 
         if get_text:
-            return f"Example: {template.apply_template(note=txt_x, label=str(raw_y))}"
+            return f"Example: {template.apply_template(note=txt_x, label=int(raw_y))}\n"
         else:
             return {'x': raw_x, 'y': raw_y}  # Return the raw input and label without text
             
