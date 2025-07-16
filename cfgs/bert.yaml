@@ -63,17 +63,16 @@ datasets:
   list_combine_train: # list of datasets to combine
     - bank
     - blood
-    - income
-    - car
+    - calhousing
     - creditg
-    - diabetes
+    - income
     - jungle
 
   list_combine_val: # list of datasets to combine for validation
     - blood
   
   list_combine_test: # list of datasets to combine for testing
-    - calhousing
+    - diabetes
   
   adult:
     name: adult
@@ -93,7 +92,7 @@ datasets:
 
   tabllm:
     raw_data_path: "tabllm/data/datasets"
-    txt_data_path: "tabllm/data/datasets_serialized"
+    txt_data_path: "tabllm/data/data_ser"
     template_dir: "tabllm/templates"
 
 

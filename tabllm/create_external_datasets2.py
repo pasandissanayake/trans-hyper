@@ -18,6 +18,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import ParameterGrid, train_test_split
 from sklearn.preprocessing import StandardScaler
+from sklearn.utils import resample
 
 import datasets
 from datasets import Dataset
@@ -357,42 +358,49 @@ def load_dataset(dataset_name, data_dir):
         'calhousing': 9
     }
     assert dataset_name in dataset_specs.keys() and len(dataset.columns) == dataset_specs[dataset_name]
-
+    dataset = balance_dataset(dataset, label_column='label')
     return dataset
 
 
 def load_and_preprocess_dataset(dataset_name, data_dir):
     dataset = load_dataset(dataset_name=dataset_name, data_dir=data_dir)
-    
-    if dataset_name == "creditg":
-        categorical = ['checking_status', 'credit_history', 'purpose', 'savings_status', 'employment', 'personal_status', 'other_parties', 'residence_since', 'property_magnitude', 'other_payment_plans', 'housing', 'job', 'own_telephone', 'foreign_worker']
-        numerical = ['num_dependents', 'existing_credits', 'installment_commitment', 'credit_amount', 'duration', 'age']
+
+    if dataset_name == "bank":
+        categorical = ['job', 'marital', 'education', 'default', 'housing', 'loan', 'contact', 'month', 'poutcome']
+        numerical = ['age', 'balance', 'day', 'duration', 'campaign', 'pdays', 'previous']
 
     elif dataset_name == "blood":
         categorical = []
         numerical = ['recency', 'frequency', 'monetary', 'time']
-        
-    elif dataset_name == "bank":
-        categorical = ['job', 'marital', 'education', 'default', 'housing', 'loan', 'contact', 'month', 'poutcome']
-        numerical = ['age', 'balance', 'day', 'duration', 'campaign', 'pdays', 'previous']
 
-        
-    elif dataset_name == "jungle":
-        categorical = []
-        numerical = []
-        
     elif dataset_name == "calhousing":
         categorical = []
         numerical = ['latitude', 'population', 'median_income', 'longitude', 'total_bedrooms', 'housing_median_age', 'households', 'total_rooms']
-        
-    elif dataset_name == "income":
-        categorical = ['workclass', 'education', 'marital_status', 'occupation', 'relationship', 'race', 'sex', 'native_country']
-        numerical = ['hours_per_week', 'capital_gain', 'capital_loss', 'age']
 
     elif dataset_name == "car":
         categorical = ['buying', 'maint', 'doors', 'persons', 'lug_boot', 'safety_dict']
         numerical = []
+    
+    elif dataset_name == "creditg":
+        categorical = ['checking_status', 'credit_history', 'purpose', 'savings_status', 'employment', 'personal_status', 'other_parties', 'residence_since', 'property_magnitude', 'other_payment_plans', 'housing', 'job', 'own_telephone', 'foreign_worker']
+        numerical = ['num_dependents', 'existing_credits', 'installment_commitment', 'credit_amount', 'duration', 'age']
+
+    elif dataset_name == "diabetes":
+        categorical = []
+        numerical = ['Age', 'Insulin', 'BloodPressure', 'Glucose', 'DiabetesPedigreeFunction', 'BMI', 'SkinThickness', 'Pregnancies']
         
+    elif dataset_name == "heart":
+        categorical = ['Sex', 'ChestPainType', 'RestingECG', 'ExerciseAngina', 'ST_Slope']
+        numerical = ['Oldpeak', 'Age', 'FastingBS', 'MaxHR', 'Cholesterol', 'RestingBP']
+
+    elif dataset_name == "income":
+        categorical = ['workclass', 'education', 'marital_status', 'occupation', 'relationship', 'race', 'sex', 'native_country']
+        numerical = ['hours_per_week', 'capital_gain', 'capital_loss', 'age']
+        
+    elif dataset_name == "jungle":
+        categorical = []
+        numerical = ['white_piece0_rank', 'white_piece0_file', 'black_piece0_strength', 'black_piece0_rank', 'white_piece0_strength', 'black_piece0_file']
+            
     elif dataset_name == "voting":
         categorical = []
         numerical = []
@@ -404,20 +412,13 @@ def load_and_preprocess_dataset(dataset_name, data_dir):
     elif dataset_name == "titanic":
         categorical = []
         numerical = []
-        
-    elif dataset_name == "heart":
-        categorical = []
-        numerical = []
-        
-    elif dataset_name == "diabetes":
-        categorical = []
-        numerical = []
-        
+               
     else:
         raise ValueError("Dataset not found")
 
     dataset = preprocess_numcols(dataset, numerical)
     dataset = preprocess_catcols(dataset, categorical)
+    dataset = balance_dataset(dataset, label_column='label')
     return dataset
 
 
@@ -608,6 +609,35 @@ def preprocess_catcols(df: pd.DataFrame, categorical_cols: list) -> pd.DataFrame
     df_processed = df.copy()
     df_encoded = pd.get_dummies(df_processed, columns=categorical_cols, drop_first=False)
     return df_encoded
+
+
+def balance_dataset(df: pd.DataFrame, label_column:str, strategy="downsample", random_state=42) -> pd.DataFrame:
+    """
+    Balances a DataFrame according to the class distribution in `label_column`.
+
+    Args:
+        df (pd.DataFrame): Input dataframe.
+        label_column (str): Name of the column containing class labels.
+        strategy (str): Either "downsample" or "upsample".
+        random_state (int): Seed for reproducibility.
+
+    Returns:
+        pd.DataFrame: Balanced dataframe.
+    """
+    grouped = [group for _, group in df.groupby(label_column)]
+    
+    if strategy == "downsample":
+        min_size = min(len(group) for group in grouped)
+        balanced = [resample(group, replace=False, n_samples=min_size, random_state=random_state)
+                    for group in grouped]
+    elif strategy == "upsample":
+        max_size = max(len(group) for group in grouped)
+        balanced = [resample(group, replace=True, n_samples=max_size, random_state=random_state)
+                    for group in grouped]
+    else:
+        raise ValueError("strategy must be 'downsample' or 'upsample'")
+    
+    return pd.concat(balanced).sample(frac=1, random_state=random_state).reset_index(drop=True)
 
 
 def output_linear_classifier_features(examples, output_dir, dataset):
