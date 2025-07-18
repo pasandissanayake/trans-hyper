@@ -1,7 +1,7 @@
 from torch.utils.data import Dataset, DataLoader
 import numpy as np
 from datahandles.dataset_utils import datahandles
-from tabllm import load_and_preprocess_dataset
+from tabllm import load_and_preprocess_dataset, balance_dataset
 from datasets import load_from_disk
 from pathlib import Path
 from datahandles import CombinedDataset, CombinedTextDataset, FewshotDataset
@@ -202,8 +202,15 @@ class CombinedTabLLMTextDataset(CombinedTextDataset):
         self.debug = cfg.debug_datasets() or cfg.debug()
 
         self.datapoints = datapoints
+
+        for ds in self.datapoints:
+            if self.split == 'train':
+                ds['data'][self.split] = balance_dataset(ds['data'][self.split], label_column='label')
+
         self.lengths = [len(ds['data'][self.split]) for ds in self.datapoints]
         self.total_length = sum(self.lengths)
+        if self.debug:
+            print(f"split: {self.split}, counts: {[ds['data'][self.split]['label'].value_counts() for ds in self.datapoints]}")
 
         self.n_features = [ds['data'][self.split].shape[1]-2 for ds in self.datapoints] # subtract 2 for note and label
         if max_n_features < 1:

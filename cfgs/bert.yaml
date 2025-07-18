@@ -65,14 +65,14 @@ datasets:
     - blood
     - calhousing
     - creditg
-    - income
+    - diabetes
     - jungle
 
   list_combine_val: # list of datasets to combine for validation
     - blood
   
   list_combine_test: # list of datasets to combine for testing
-    - diabetes
+    - income
   
   adult:
     name: adult
@@ -92,7 +92,7 @@ datasets:
 
   tabllm:
     raw_data_path: "tabllm/data/datasets"
-    txt_data_path: "tabllm/data/data_ser"
+    txt_data_path: "tabllm/data/datasets_serialized"
     template_dir: "tabllm/templates"
 
 
