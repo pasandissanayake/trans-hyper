@@ -126,9 +126,7 @@ class TabLLMDataObject():
             self.cfg.hyponet.in_dim(self.max_n_features) # type: ignore
             if self.debug:
                 print(f"Hyponet in_dim set to max number of features (={self.max_n_features})")
-        
-        print([(len(raw), len(txt)) for raw, txt in zip(self.raw_datapoints, self.txt_datapoints)])
-        
+                
         # create splits
         self.split_datapoints = {ds_name: {'data': self.split_and_concat_dfs(raw_dps, txt_dps, 
                                                            test_ratio=self.test_ratio, 
@@ -200,19 +198,23 @@ class CombinedTabLLMTextDataset(CombinedTextDataset):
         self.cfg = cfg
         self.split = split
         self.debug = cfg.debug_datasets() or cfg.debug()
-
         self.datapoints = datapoints
 
-        for ds in self.datapoints:
-            if self.split == 'train':
-                ds['data'][self.split] = balance_dataset(ds['data'][self.split], label_column='label')
+        self.balanced = getattr(self.cfg.datasets.balanced, self.split)
+        self.balanced = self.balanced()
+        
+        if self.balanced:
+            for ds in self.datapoints:
+                ds['data'][self.split] = balance_dataset(ds['data'][self.split], label_column='label') # type: ignore
+            if self.debug:
+                print(f"Balancing {self.split} split")
 
-        self.lengths = [len(ds['data'][self.split]) for ds in self.datapoints]
+        self.lengths = [len(ds['data'][self.split]) for ds in self.datapoints] # type: ignore
         self.total_length = sum(self.lengths)
         if self.debug:
-            print(f"split: {self.split}, counts: {[ds['data'][self.split]['label'].value_counts() for ds in self.datapoints]}")
+            print(f"split: {self.split}, counts: {[ds['data'][self.split]['label'].value_counts() for ds in self.datapoints]}") # type: ignore
 
-        self.n_features = [ds['data'][self.split].shape[1]-2 for ds in self.datapoints] # subtract 2 for note and label
+        self.n_features = [ds['data'][self.split].shape[1]-2 for ds in self.datapoints] # type: ignore # subtract 2 for note and label
         if max_n_features < 1:
             self.max_n_features = max(self.n_features)
         else:
@@ -231,7 +233,7 @@ class CombinedTabLLMTextDataset(CombinedTextDataset):
             get_text = False
 
         i, ds_idx = self._get_dataset_idx(idx)
-        row = self.datapoints[i]['data'][self.split].iloc[ds_idx]
+        row = self.datapoints[i]['data'][self.split].iloc[ds_idx] # type: ignore
         template = self.datapoints[i]['template']
 
         txt_x = row[TEXT_COL_NAME]
@@ -242,7 +244,7 @@ class CombinedTabLLMTextDataset(CombinedTextDataset):
         raw_x[:self.n_features[i]] = new_row.to_numpy(dtype=np.float32)
 
         if get_text:
-            return f"Example: {template.apply_template(note=txt_x, label=int(raw_y))}\n"
+            return f"Example: {template.apply_template(note=txt_x, label=int(raw_y))}\n" # type: ignore
         else:
             return {'x': raw_x, 'y': raw_y}  # Return the raw input and label without text
             

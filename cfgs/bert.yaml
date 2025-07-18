@@ -59,6 +59,10 @@ datasets:
   n_queries: 20
   test_ratio: 0.3
   validation_ratio: 0.2
+  balanced:
+    train: True
+    val: False
+    test: false
 
   list_combine_train: # list of datasets to combine
     - bank
