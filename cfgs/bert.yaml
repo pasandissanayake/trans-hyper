@@ -2,6 +2,7 @@
 name: bert
 save_dir: './save/'
 eval_model: false # "/export/pasand/trans-hyper/save/bert/epoch-last.pth"
+wandb_cfg: 'wandbtest.yaml'
 
 
 # debugging configuration

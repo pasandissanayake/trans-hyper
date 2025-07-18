@@ -2,4 +2,4 @@ data/
 save/
 *.pyc
 tabllm/data/
-wandb.yaml
+wandbtest.yaml
