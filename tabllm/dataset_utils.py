@@ -1,4 +1,5 @@
 import random
+from pathlib import Path
 from scipy import spatial
 from scipy.io.arff import loadarff
 import pandas as pd
@@ -14,6 +15,9 @@ from .helper.external_datasets_variables import *
 
 
 def load_dataset(dataset_name, data_dir):
+    if type(data_dir) is not Path:
+        data_dir = Path(data_dir)
+        
     def byte_to_string_columns(data):
         for col, dtype in data.dtypes.items():
             if dtype == object:  # Only process byte object columns.

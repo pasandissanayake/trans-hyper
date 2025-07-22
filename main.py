@@ -1,6 +1,8 @@
 import torch
 import argparse
 import os
+import yaml
+import wandb
 
 from datahandles import FewshotDataset, TabLLMDataObject
 from utils import Config, ConfigObject
@@ -43,12 +45,17 @@ def make_cfg(args):
    
     return cfg
 
+def adopt_wandb_cfg(cfg, wandb_cfg):
+    cfg.trainer.optimizer.args.lr(wandb_cfg.learning_rate)
+    cfg.trainer.batch_size(wandb_cfg.batch_size)
+    cfg.datasets.n_shots(wandb_cfg.n_shots)
+    return cfg
 
-def main():
-    args = parse_args()
-    cfg = make_cfg(args)
-
-    if cfg.debug(): print('UNIVERSAL DEBUG MODE ENABLED') # type: ignore
+def train(cfg:Config, sweep:bool):
+    if cfg.env.wandb_upload():
+        wandb.init()
+    if sweep:
+        cfg = adopt_wandb_cfg(cfg, wandb.config)
 
     tabllm_data = TabLLMDataObject(cfg=cfg, set_hyponet_in_dim=True)
     train_ds = tabllm_data.data['train']
@@ -57,6 +64,31 @@ def main():
     trainer = trainers[cfg.trainer.name()](0, cfg, train_ds, test_ds) # type: ignore
     
     trainer.run()
+
+def main():
+    args = parse_args()
+    cfg = make_cfg(args)
+
+    if cfg.debug(): print('UNIVERSAL DEBUG MODE ENABLED') # type: ignore
+
+    if cfg.env.wandb_upload():
+        with open(cfg.wandb_auth(), 'r') as f:
+            wandb_auth = yaml.load(f, Loader=yaml.FullLoader)
+        os.environ['WANDB_DIR'] = cfg.env.save_dir()
+        os.environ['WANDB_NAME'] = cfg.env.exp_name()
+        os.environ['WANDB_API_KEY'] = wandb_auth['api_key']
+
+        if cfg.wandb_sweep_cfg():
+            with open(cfg.wandb_sweep_cfg(), 'r') as f:
+                sweep_cfg = yaml.load(f, Loader=yaml.FullLoader)
+            sweep_id = wandb.sweep(sweep_cfg, project=wandb_auth['project'])
+            def train_wrapper():
+                train(cfg, sweep=True)
+            wandb.agent(sweep_id, train_wrapper, count=10)
+        else:
+            train(cfg=cfg, sweep=False)
+    
+
 
 
 if __name__ == "__main__":
