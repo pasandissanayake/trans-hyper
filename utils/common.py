@@ -38,8 +38,11 @@ def set_save_dir(save_dir, replace=True):
     return logger, writer
 
 
-def compute_num_params(model, text=True):
-    tot = int(sum([np.prod(p.shape) for p in model.parameters()]))
+def compute_num_params(model, text=True, trainable_only=False):
+    if trainable_only:
+        tot = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    else:
+        tot = int(sum([np.prod(p.shape) for p in model.parameters()]))
     if text:
         if tot >= 1e6:
             return '{:.1f}M'.format(tot / 1e6)

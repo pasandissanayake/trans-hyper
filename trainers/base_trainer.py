@@ -164,7 +164,7 @@ class BaseTrainer(ABC):
         if cfg is None:
             cfg = self.cfg
         model = models.make(model_name=cfg.hypernet.model(), cfg=cfg, sd=sd)
-        self.log(f'Model: #params={utils.compute_num_params(model)}')
+        self.log(f'Model: #params={utils.compute_num_params(model)}, #trainable-params={utils.compute_num_params(model, trainable_only=True)}')
 
         if self.distributed:
             model = nn.SyncBatchNorm.convert_sync_batchnorm(model)

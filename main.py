@@ -3,6 +3,7 @@ import argparse
 import os
 import yaml
 import wandb
+from datetime import datetime
 
 from datahandles import FewshotDataset, TabLLMDataObject
 from utils import Config, ConfigObject
@@ -15,6 +16,8 @@ def parse_args():
                         help='Path to the config file.')
     parser.add_argument('--name', type=str, default=None,
                         help='Experiment name. If not provided, will use the cfg filename.')
+    parser.add_argument('--group', type=str, default=None,
+                        help='Experiment group name for WandB.')
     parser.add_argument('--save-root', default='save')
     parser.add_argument('--tag', default=None)
     parser.add_argument('--cudnn', action='store_true')
@@ -37,6 +40,7 @@ def make_cfg(args):
 
     setattr(cfg, "env", ConfigObject())
     setattr(cfg.env, "exp_name", ConfigObject(exp_name)) # type: ignore
+    setattr(cfg.env, "exp_group", ConfigObject(args.group)) # type: ignore
     setattr(cfg.env, "total_gpus", ConfigObject(torch.cuda.device_count())) # type: ignore
     setattr(cfg.env, "save_dir", ConfigObject(os.path.join(args.save_root, exp_name))) # type: ignore
     setattr(cfg.env, "wandb_upload", ConfigObject(args.wandb_upload)) # type: ignore
@@ -46,14 +50,16 @@ def make_cfg(args):
     return cfg
 
 def adopt_wandb_cfg(cfg, wandb_cfg):
-    cfg.trainer.optimizer.args.lr(wandb_cfg.learning_rate)
-    cfg.trainer.batch_size(wandb_cfg.batch_size)
-    cfg.datasets.n_shots(wandb_cfg.n_shots)
+    # cfg.trainer.optimizer.args.lr(wandb_cfg.learning_rate)
+    # cfg.trainer.batch_size(wandb_cfg.batch_size)
+    # cfg.datasets.n_shots(wandb_cfg.n_shots)
     return cfg
 
 def train(cfg:Config, sweep:bool):
     if cfg.env.wandb_upload():
-        wandb.init()
+        wandb_name = os.environ["WANDB_NAME"]
+        timestamp = datetime.now().strftime("%y%m%d%H%M")
+        wandb.init(name=f"{wandb_name}-{timestamp}")
     if sweep:
         cfg = adopt_wandb_cfg(cfg, wandb.config)
 
@@ -84,9 +90,11 @@ def main():
             sweep_id = wandb.sweep(sweep_cfg, project=wandb_auth['project'])
             def train_wrapper():
                 train(cfg, sweep=True)
-            wandb.agent(sweep_id, train_wrapper, count=10)
+            wandb.agent(sweep_id, train_wrapper, count=5)
         else:
             train(cfg=cfg, sweep=False)
+    else:
+        train(cfg=cfg, sweep=False)
     
 
 
