@@ -41,7 +41,7 @@ tokenizer:
 # trainer configuration
 trainer:
   name: bert_trainer
-  batch_size: 32
+  batch_size: 16
   n_workers: 1
   max_epoch: 10
   eval_epoch: 1
@@ -63,19 +63,20 @@ datasets:
   validation_ratio: 0.2
   balanced:
     train: True
-    val: False
-    test: false
+    val: True
+    test: True
 
   list_combine_train: # list of datasets to combine
+    - bank
     - calhousing
     - creditg
-    - income
+    
 
   list_combine_val: # list of datasets to combine for validation
-    - bank
+    - calhousing
   
   list_combine_test: # list of datasets to combine for testing
-    - bank
+    - income
   
   adult:
     name: adult

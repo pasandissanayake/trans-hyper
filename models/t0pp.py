@@ -8,7 +8,7 @@ from models import register, make
 HYPERNET_NAME = "t0pp"
 
 @register(HYPERNET_NAME)
-class T0ppRegression(nn.Module):
+class T0ppRegressionModel(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.name = HYPERNET_NAME
@@ -26,7 +26,7 @@ class T0ppRegression(nn.Module):
                     return True
             return False
         for name, param in self.model.named_parameters():
-            if check_any_substring(name, ["22, 23"]):
+            if check_any_substring(name, ["None"]):
                 param.requires_grad = True
             else:
                 param.requires_grad = False

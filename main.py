@@ -59,7 +59,7 @@ def train(cfg:Config, sweep:bool):
     if cfg.env.wandb_upload():
         wandb_name = os.environ["WANDB_NAME"]
         timestamp = datetime.now().strftime("%y%m%d%H%M")
-        wandb.init(name=f"{wandb_name}-{timestamp}")
+        wandb.init(name=f"{wandb_name}-{timestamp}", group=cfg.env.exp_group())
     if sweep:
         cfg = adopt_wandb_cfg(cfg, wandb.config)
 
