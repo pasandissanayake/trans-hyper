@@ -68,15 +68,14 @@ datasets:
 
   list_combine_train: # list of datasets to combine
     - bank
-    - calhousing
     - creditg
+    - income
     
-
   list_combine_val: # list of datasets to combine for validation
     - calhousing
   
   list_combine_test: # list of datasets to combine for testing
-    - income
+    - calhousing
   
   adult:
     name: adult
