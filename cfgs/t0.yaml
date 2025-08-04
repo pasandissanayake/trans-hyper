@@ -1,7 +1,7 @@
 # experiment configuration
-name: t0pp
+name: t0
 save_dir: './save/'
-eval_model: false # "/export/pasand/trans-hyper/save/bert/epoch-last.pth"
+eval_model: false # "/export/pasand/trans-hyper/save/t0pp-calhouse-finonly/epoch-10.pth"
 wandb_auth: 'wandb_auth.yaml'
 wandb_sweep_cfg: false # 'cfgs/sweeps/sweeptest.yaml'
 
@@ -16,8 +16,8 @@ debug_trainer: false
 
 # hypernet configuration
 hypernet:
-  model: t0pp
-  name: bigscience/T0pp
+  name: t0
+  model: bigscience/T0pp
 
 
 # hyponet configuration
@@ -31,8 +31,8 @@ hyponet:
 
 # tokenizer configuration
 tokenizer:
-  model: t0pp_tokenizer
-  name: bigscience/T0pp
+  name: t0_tokenizer
+  model: bigscience/T0pp
   truncation: True
   padding: max_length
   max_length: 512
@@ -40,7 +40,7 @@ tokenizer:
 
 # trainer configuration
 trainer:
-  name: bert_trainer
+  name: t0_trainer
   batch_size: 16
   n_workers: 1
   max_epoch: 10

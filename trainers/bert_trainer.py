@@ -14,7 +14,7 @@ class BertTrainer(BaseTrainer):
     def __init__(self, rank, cfg, train_ds=None, test_ds=None):
         super().__init__(rank=rank, cfg=cfg, train_ds=train_ds, test_ds=test_ds)
         self.name = TRAINER_NAME
-        self.tokenizer = models.make(model_name=self.cfg.tokenizer.model(), cfg=self.cfg, sd=None)
+        self.tokenizer = models.make(model_name=self.cfg.tokenizer.name(), cfg=self.cfg, sd=None)
 
     def compute_loss(self, data):
         shots = data['shots']
@@ -49,7 +49,6 @@ class BertTrainer(BaseTrainer):
         return accuracy
     
     def compute_accuracy(self, data):
-        # tokenizer = models.make(model_name=self.cfg.tokenizer.model(), cfg=self.cfg, sd=None)
         shots = data['shots']
         shots = self.tokenizer(shots)
         input_ids = shots['input_ids'].cuda()

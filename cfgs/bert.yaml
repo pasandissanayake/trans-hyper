@@ -16,8 +16,8 @@ debug_trainer: false
 
 # hypernet configuration
 hypernet:
-  model: bert
-  name: bert-base-uncased
+  name: bert
+  model: bert-base-uncased
 
 
 # hyponet configuration
@@ -31,8 +31,8 @@ hyponet:
 
 # tokenizer configuration
 tokenizer:
-  model: bert_tokenizer
-  name: bert-base-uncased
+  name: bert_tokenizer
+  model: bert-base-uncased
   truncation: True
   padding: max_length
   max_length: 512

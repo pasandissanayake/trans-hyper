@@ -2,15 +2,15 @@ from typing import Any
 from models import register
 from transformers import AutoTokenizer
 
-TOKENIZER_NAME = "t0pp_tokenizer"
+TOKENIZER_NAME = "t0_tokenizer"
 
 @register(TOKENIZER_NAME)
-class TokenizerForBert():
+class TokenizerForT0():
     def __init__(self, cfg) -> None:
         self.name = TOKENIZER_NAME
         self.cfg = cfg
         self.tokenizer_cfg = self.cfg.tokenizer
-        self.tokenizer = AutoTokenizer.from_pretrained(self.cfg.hypernet.name())
+        self.tokenizer = AutoTokenizer.from_pretrained(self.cfg.hypernet.model())
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         return self.tokenizer(*args, 

@@ -8,6 +8,12 @@ from torch.optim import SGD, Adam
 from tensorboardX import SummaryWriter
 
 
+def check_any_substring(target_string, list_of_substrings):
+    for substring in list_of_substrings:
+        if substring in target_string:
+            return True
+    return False
+
 def ensure_path(path, replace=True):
     basename = os.path.basename(path.rstrip('/'))
     if os.path.exists(path):

@@ -1,1 +1,1 @@
-from . import bert_tokenizer, t0pp_tokenizer
+from . import bert_tokenizer, t0_tokenizer

@@ -3,12 +3,13 @@ from transformers import AutoModelForSeq2SeqLM
 import torch.nn.functional as F
 
 from models import register, make
+from utils.common import check_any_substring
 
 
-HYPERNET_NAME = "t0pp"
+HYPERNET_NAME = "t0"
 
 @register(HYPERNET_NAME)
-class T0ppRegressionModel(nn.Module):
+class T0RegressionModel(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         self.name = HYPERNET_NAME
@@ -16,20 +17,16 @@ class T0ppRegressionModel(nn.Module):
         self.hypernet_cfg = self.cfg.hypernet
         self.debug = self.cfg.debug_hypernet() or self.cfg.debug()
         
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(self.hypernet_cfg.name())
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(self.hypernet_cfg.model())
         self.encoder = self.model.encoder
         
         # fine-tune only a part of the model
-        def check_any_substring(target_string, list_of_substrings):
-            for substring in list_of_substrings:
-                if substring in target_string:
-                    return True
-            return False
         for name, param in self.model.named_parameters():
-            if check_any_substring(name, ["None"]):
-                param.requires_grad = True
-            else:
-                param.requires_grad = False
+            param.requires_grad = False
+            # if check_any_substring(name, ["None"]):
+            #     param.requires_grad = True
+            # else:
+            #     param.requires_grad = False
 
         self.hyponet = make(model_name=self.cfg.hyponet.model(), cfg=self.cfg, sd=None)
                
@@ -43,7 +40,7 @@ class T0ppRegressionModel(nn.Module):
         )
 
         if self.debug:
-            print(f"Initializing hypernet {self.name}, name: {self.hypernet_cfg.name()}")
+            print(f"Initializing hypernet {self.name}, name: {self.hypernet_cfg.name()}, model: {self.hypernet_cfg.model()}")
             print(f"{self.name} hypernet hidden size: {self.model.config.d_model}")
             print(f"total hyponet params: {total_params}")
             

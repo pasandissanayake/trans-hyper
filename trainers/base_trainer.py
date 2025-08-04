@@ -105,7 +105,7 @@ class BaseTrainer(ABC):
         self.make_datasets()
 
         if self.cfg.eval_model():
-            checkpoint = torch.load(self.cfg.eval_model())
+            checkpoint = torch.load(self.cfg.eval_model(), weights_only=False)
             print(checkpoint.keys())
             cfg = utils.Config(cfg_dict=checkpoint['cfg'])
             self.make_model(cfg=cfg, sd=checkpoint['model'])
@@ -163,7 +163,7 @@ class BaseTrainer(ABC):
     def make_model(self, cfg=None, sd=None):
         if cfg is None:
             cfg = self.cfg
-        model = models.make(model_name=cfg.hypernet.model(), cfg=cfg, sd=sd)
+        model = models.make(model_name=cfg.hypernet.name(), cfg=cfg, sd=sd)
         self.log(f'Model: #params={utils.compute_num_params(model)}, #trainable-params={utils.compute_num_params(model, trainable_only=True)}')
 
         if self.distributed:

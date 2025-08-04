@@ -10,7 +10,7 @@ class TokenizerForBert():
         self.name = TOKENIZER_NAME
         self.cfg = cfg
         self.tokenizer_cfg = self.cfg.tokenizer
-        self.tokenizer = BertTokenizer.from_pretrained(self.cfg.hypernet.name())
+        self.tokenizer = BertTokenizer.from_pretrained(self.cfg.hypernet.model())
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         return self.tokenizer(*args, 

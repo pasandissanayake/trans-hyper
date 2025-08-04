@@ -16,7 +16,7 @@ class BertRegressionModel(nn.Module):
         self.hypernet_cfg = self.cfg.hypernet
         self.debug = self.cfg.debug_hypernet() or self.cfg.debug()
         
-        self.bert = BertModel.from_pretrained(self.hypernet_cfg.name())
+        self.bert = BertModel.from_pretrained(self.hypernet_cfg.model())
         # fine-tune only the output dense layer
         for name, param in self.bert.named_parameters():
             if "encoder.layer.11.output.dense" not in name:
@@ -33,7 +33,7 @@ class BertRegressionModel(nn.Module):
         )
 
         if self.debug:
-            print(f"Initializing hypernet {self.name}, name: {self.hypernet_cfg.name()}")
+            print(f"Initializing hypernet {self.name}, name: {self.hypernet_cfg.name()}, model: {self.hypernet_cfg.model()}")
             print(f"{self.name} hypernet hidden size: {self.bert.config.hidden_size}")
             print(f"total hyponet params: {total_params}")
             

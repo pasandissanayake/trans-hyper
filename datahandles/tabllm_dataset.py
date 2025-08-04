@@ -118,7 +118,7 @@ class TabLLMDataObject():
         self.max_n_features = max(self.n_features)
 
         if self.debug:
-            print((f"TabLLMDataObject initialized with {len(self.ds_list_dict['train'])} training set(s),"
+            print((f"TabLLMDataObject initialized with {len(self.ds_list_dict['train'])} training set(s), "
                   f"{len(self.ds_list_dict['val'])} validation set(s), and {len(self.ds_list_dict['test'])} test set(s).\n"
                   f"Maximum number of features across all datasets: {self.max_n_features}"))
             
