@@ -74,12 +74,6 @@ class BaseTrainer(ABC):
 
             if self.cfg.env.wandb_upload():
                 self.enable_wandb = True
-                # with open(cfg.wandb_cfg(), 'r') as f:
-                #     wandb_cfg = yaml.load(f, Loader=yaml.FullLoader)
-                # os.environ['WANDB_DIR'] = self.cfg.env.save_dir()
-                # os.environ['WANDB_NAME'] = self.cfg.env.exp_name()
-                # os.environ['WANDB_API_KEY'] = wandb_cfg['api_key']
-                # wandb.init(project=wandb_cfg['project'], entity=wandb_cfg['entity'], config=cfg)
             else:
                 self.enable_wandb = False
         else:

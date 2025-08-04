@@ -72,6 +72,7 @@ def train(cfg:Config, sweep:bool):
     trainer.run()
 
 def main():
+    os.environ["TOKENIZERS_PARALLELISM"] = "false"
     args = parse_args()
     cfg = make_cfg(args)
 
