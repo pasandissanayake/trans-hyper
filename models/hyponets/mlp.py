@@ -1,8 +1,9 @@
 import torch.nn as nn
+import einops
+import torch
 
 from models import register
-from .layers import batched_linear_mm
-
+from layers import batched_linear_mm
 
 HYPONET_NAME = "mlp"
 

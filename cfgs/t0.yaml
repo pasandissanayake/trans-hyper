@@ -58,9 +58,6 @@ trainer:
 datasets:
   data_root: ./data/
   n_shots: 128
-  n_queries: 20
-  test_ratio: 0.3
-  validation_ratio: 0.2
   balanced:
     train: True
     val: True
@@ -68,14 +65,12 @@ datasets:
 
   list_combine_train: # list of datasets to combine
     - bank
-    - creditg
-    - income
     
   list_combine_val: # list of datasets to combine for validation
-    - calhousing
+    - bank
   
   list_combine_test: # list of datasets to combine for testing
-    - calhousing
+    - bank
   
   adult:
     name: adult

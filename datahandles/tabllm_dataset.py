@@ -79,7 +79,7 @@ class Template():
         # Combine the rendered parts with '|||' as the explicit separator in the final output
         # This ensures '|||' is always present as a separator if the template implies it.
         if rendered_answer:
-            rendered_output = f"{self.rendered_prompt}\n|||\n{rendered_answer}"
+            rendered_output = f"{self.rendered_prompt}" # Include only the prompt for k-shot fine-tuning
         else:
             rendered_output = self.rendered_prompt # If there's no answer part, just return the prompt
 
@@ -94,12 +94,9 @@ class TabLLMDataObject():
         self.debug = cfg.debug_datasets() or cfg.debug()
         self.raw_data_path = self.cfg.datasets.tabllm.raw_data_path
         self.txt_data_path = self.cfg.datasets.tabllm.txt_data_path
-        self.test_ratio = self.cfg.datasets.test_ratio()
-        self.val_ratio = self.cfg.datasets.validation_ratio()
-
-        self.n_shots = self.cfg.datasets.n_shots()
-        self.n_queries = self.cfg.datasets.n_queries()
         
+        self.n_shots = self.cfg.datasets.n_shots()
+                
         self.ds_list_dict = {}
         self.ds_list_dict['train'] = self.cfg.datasets.list_combine_train()
         self.ds_list_dict['val'] = self.cfg.datasets.list_combine_val()
@@ -127,29 +124,30 @@ class TabLLMDataObject():
             if self.debug:
                 print(f"Hyponet in_dim set to max number of features (={self.max_n_features})")
                 
-        # create splits
+        # create splits -- structure is as follows:
+        # self.split_datapoints: {ds_name: {
+        #                               'data': {'train': dataframe, 'valid': dataframe, 'test': dataframe},  
+        #                               'template': text template
+        #                                  }
+        #                         }
         self.split_datapoints = {ds_name: {'data': self.split_and_concat_dfs(raw_dps, txt_dps, 
-                                                           test_ratio=self.test_ratio, 
-                                                           val_ratio=self.val_ratio,
+                                                           n_shots=self.n_shots,
                                                            seed=np.random.randint(low=0, high=100)) , 'template': Template(self.cfg, ds_name)}
                                                            for ds_name, raw_dps, txt_dps in zip(self.all_ds_list, self.raw_datapoints, self.txt_datapoints)}
         
 
         self.data = {}
         for split in self.splits:
-            self.data[split] = FewshotTabLLMDataset(cfg=self.cfg,
-                                             split=split,
-                                             datapoints=[self.split_datapoints[key] for key in self.ds_list_dict[split]],
-                                             max_n_features = self.max_n_features,
-                                             n_shots=self.n_shots,
-                                             n_queries=self.n_queries)
+            self.data[split] = CombinedTabLLMTextDataset(cfg=cfg, 
+                                                         split=split, 
+                                                         datapoints=list(self.split_datapoints.values()), 
+                                                         max_n_features=self.max_n_features)
         
     def split_and_concat_dfs(
             self,
             df_features: pd.DataFrame,
             df_notes: pd.DataFrame,
-            val_ratio: float = 0.15,
-            test_ratio: float = 0.15,
+            n_shots: int,
             shuffle: bool = True,
             seed: int = 42,
             note_column_name: str = TEXT_COL_NAME
@@ -161,11 +159,9 @@ class TabLLMDataObject():
         Returns:
             train_df, val_df, test_df — each containing features + a 'note' column
         """
-        train_ratio: float = 1 - val_ratio - test_ratio
-
         assert df_features.shape[0] == df_notes.shape[0], f"DataFrames must be the same length. Got {df_features.shape[0]} and {df_notes.shape[0]}"
         assert note_column_name in df_notes.columns, f"'{note_column_name}' column must exist in df_notes"
-        assert train_ratio >= 0, "Ratios must sum to 1.0"
+        assert n_shots >= 0, "Ratios must sum to 1.0"
 
         n = len(df_features)
         indices = np.arange(n)
@@ -174,12 +170,11 @@ class TabLLMDataObject():
             np.random.seed(seed)
             np.random.shuffle(indices)
 
-        train_end = int(train_ratio * n)
-        val_end = train_end + int(val_ratio * n)
-
-        train_idx = indices[:train_end]
-        val_idx = indices[train_end:val_end]
-        test_idx = indices[val_end:]
+        valid_end = n_shots + int(0.5 * (n - n_shots))
+        
+        train_idx = indices[:n_shots]
+        val_idx = indices[n_shots:valid_end]
+        test_idx = indices[valid_end:]
 
         def concat(df_feat, df_note, idx):
             df_combined = df_feat.iloc[idx].copy().reset_index(drop=True)
@@ -198,6 +193,14 @@ class CombinedTabLLMTextDataset(CombinedTextDataset):
         self.cfg = cfg
         self.split = split
         self.debug = cfg.debug_datasets() or cfg.debug()
+
+        # structure of self.datapoints is as follows:
+        # self.datapoints = [   ---> a list of dictionaries, one for each dataset
+        #     {
+        #         'data': {'train': df. 'valid': df, 'test': df}, 
+        #         'template': text template
+        #     }
+        # ]
         self.datapoints = datapoints
 
         self.balanced = getattr(self.cfg.datasets.balanced, self.split)
@@ -246,27 +249,9 @@ class CombinedTabLLMTextDataset(CombinedTextDataset):
         if get_text:
             return f"Example: {template.apply_template(note=txt_x, label=int(raw_y))}\n" # type: ignore
         else:
-            return {'x': raw_x, 'y': raw_y}  # Return the raw input and label without text
-            
-
-
-
-class FewshotTabLLMDataset(FewshotDataset):
-    def __init__(self, cfg, split: str, datapoints:list[dict[str, Union[dict[str, pd.DataFrame],Template]]], max_n_features:int, n_shots: int, n_queries: int):
-        self.cfg = cfg
-        self.split = split
-        self.n_shots = n_shots
-        self.n_queries = n_queries
-        self.block_len = self.n_shots + self.n_queries
-        
-        self.combined_dataset = CombinedTabLLMTextDataset(self.cfg, self.split, datapoints, max_n_features)
-        self.combds_length = len(self.combined_dataset)
-        if self.combds_length < self.block_len:
-            raise ValueError(f"Not enough samples in combined dataset for few-shot learning. Required: {self.block_len}, Available: {self.combds_length}")
-
-        # Randomly sample from the combined dataset
-        self.length = self.combds_length // self.block_len
-        indices = np.random.choice(self.combds_length, self.combds_length, replace=False)
-        self.grouped_indices = self._group_items(data=indices, n_items=self.block_len, drop_last=True)
-        
+            return {'queries_x': raw_x, 
+                    'queries_y': raw_y,
+                    'shots': f"Example: {template.apply_template(note=txt_x, label=int(raw_y))}\n" # type: ignore
+                }  # Return the raw input and text
+                
     

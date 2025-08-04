@@ -15,19 +15,21 @@ class BertTrainer(BaseTrainer):
         super().__init__(rank=rank, cfg=cfg, train_ds=train_ds, test_ds=test_ds)
         self.name = TRAINER_NAME
         self.tokenizer = models.make(model_name=self.cfg.tokenizer.name(), cfg=self.cfg, sd=None)
+        self.hyponet = None
 
-    def compute_loss(self, data):
-        shots = data['shots']
-        shots = self.tokenizer(shots)
-        input_ids = shots['input_ids'].cuda()
-        attention_mask = shots['attention_mask'].cuda()
+    def compute_loss(self, data, eval=False):
+        if not eval:
+            shots = data['shots']
+            shots = self.tokenizer(shots)
+            input_ids = shots['input_ids'].cuda()
+            attention_mask = shots['attention_mask'].cuda()
+            self.hyponet = self.model_ddp({'input_ids': input_ids, 'attention_mask': attention_mask})
+
         queries_x = data['queries_x'].cuda()
         queries_y = data['queries_y'].cuda()
-
-        hyponet = self.model_ddp({'input_ids': input_ids, 'attention_mask': attention_mask})
+        
         criterion = nn.CrossEntropyLoss()
-        loss = criterion(einops.rearrange(hyponet(queries_x), "batch n_queries n_class -> (batch n_queries) n_class"),
-                         einops.rearrange(queries_y, "batch n_queries -> (batch n_queries)"))
+        loss = criterion(self.hyponet(queries_x), queries_y)
         return loss
     
     def accuracy(self, outputs, labels):
@@ -49,20 +51,19 @@ class BertTrainer(BaseTrainer):
         return accuracy
     
     def compute_accuracy(self, data):
-        shots = data['shots']
-        shots = self.tokenizer(shots)
-        input_ids = shots['input_ids'].cuda()
-        attention_mask = shots['attention_mask'].cuda()
+        # shots = data['shots']
+        # shots = self.tokenizer(shots)
+        # input_ids = shots['input_ids'].cuda()
+        # attention_mask = shots['attention_mask'].cuda()
         queries_x = data['queries_x'].cuda()
         queries_y = data['queries_y'].cuda()
 
-        hyponet = self.model_ddp({'input_ids': input_ids, 'attention_mask': attention_mask})
+        # hyponet = self.model_ddp({'input_ids': input_ids, 'attention_mask': attention_mask})
 
-        return self.accuracy(einops.rearrange(hyponet(queries_x), "batch n_queries n_class -> (batch n_queries) n_class"),
-                         einops.rearrange(queries_y, "batch n_queries -> (batch n_queries)"))
+        return self.accuracy(self.hyponet(queries_x), queries_y)
     
     def train_step(self, data):
-        loss = self.compute_loss(data)
+        loss = self.compute_loss(data, eval=False)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
@@ -71,6 +72,6 @@ class BertTrainer(BaseTrainer):
 
     def evaluate_step(self, data):
         with torch.no_grad():
-            loss = self.compute_loss(data)
+            loss = self.compute_loss(data, eval=True)
             acc = self.compute_accuracy(data)
         return {'loss': loss.item(), 'acc': acc}
