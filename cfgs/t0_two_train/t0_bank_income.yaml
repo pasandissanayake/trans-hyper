@@ -1,5 +1,5 @@
 # experiment configuration
-name: t0
+name: t0_balanced
 save_dir: './save/'
 eval_model: false # "/export/pasand/trans-hyper/save/t0pp-calhouse-finonly/epoch-10.pth"
 wandb_auth: 'wandb_auth.yaml'
@@ -17,7 +17,7 @@ debug_trainer: false
 # hypernet configuration
 hypernet:
   name: t0
-  model: bigscience/T0_3B
+  model: bigscience/T0pp
 
 
 # hyponet configuration
@@ -32,7 +32,7 @@ hyponet:
 # tokenizer configuration
 tokenizer:
   name: t0_tokenizer
-  model: bigscience/T0_3B
+  model: bigscience/T0pp
   truncation: True
   padding: max_length
   max_length: 512
@@ -43,7 +43,7 @@ trainer:
   name: t0_trainer
   batch_size: 16
   n_workers: 1
-  max_epoch: 20
+  max_epoch: 10
   eval_epoch: 1
   vis_epoch: 25
   save_epoch: 1
@@ -68,11 +68,13 @@ datasets:
 
   list_combine_train: # list of datasets to combine
     - bank
+    - income
+    
+  list_combine_val: # list of datasets to combine for validation
+    - bank
+    - calhousing
     - creditg
     - income
-        
-  list_combine_val: # list of datasets to combine for validation
-    - calhousing
   
   list_combine_test: # list of datasets to combine for testing
     - calhousing

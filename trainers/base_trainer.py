@@ -100,7 +100,6 @@ class BaseTrainer(ABC):
 
         if self.cfg.eval_model():
             checkpoint = torch.load(self.cfg.eval_model(), weights_only=False)
-            print(checkpoint.keys())
             cfg = utils.Config(cfg_dict=checkpoint['cfg'])
             self.make_model(cfg=cfg, sd=checkpoint['model'])
             self.epoch = 0

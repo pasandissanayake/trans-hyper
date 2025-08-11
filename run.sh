@@ -1,3 +1,2 @@
-python main.py --name "t0pp-income-finonly" --cfg "cfgs/t0pp.yaml" --group "income" -w
-python main.py --name "t0pp-income-finonly" --cfg "cfgs/t0pp.yaml" --group "income" -w
-python main.py --name "t0pp-income-finonly" --cfg "cfgs/t0pp.yaml" --group "income" -w
+python main.py --name "t0pp-twotrain-calhousing-income" --cfg "cfgs/t0_two_train/t0_calhousing_income.yaml" --group "cal-income" -w
+python main.py --name "t0pp-twotrain-creditg-income" --cfg "cfgs/t0_two_train/t0_creditg_income.yaml" --group "creditg-income" -w

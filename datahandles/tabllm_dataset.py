@@ -120,6 +120,7 @@ class TabLLMDataObject():
         if self.debug:
             print((f"TabLLMDataObject initialized with {len(self.ds_list_dict['train'])} training set(s), "
                   f"{len(self.ds_list_dict['val'])} validation set(s), and {len(self.ds_list_dict['test'])} test set(s).\n"
+                  f"{self.ds_list_dict}\n"
                   f"Maximum number of features across all datasets: {self.max_n_features}"))
             
         if set_hyponet_in_dim:

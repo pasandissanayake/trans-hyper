@@ -21,12 +21,18 @@ class T0RegressionModel(nn.Module):
         self.encoder = self.model.encoder
         
         # fine-tune only a part of the model
+        finetune_layers = [
+            # "block.23.layer.1.DenseReluDense.wi_0.weight",
+            # "block.23.layer.1.DenseReluDense.wi_1.weight",
+            "block.23.layer.1.DenseReluDense.wo.weight"
+            # "None"
+        ]
         for name, param in self.model.named_parameters():
-            param.requires_grad = False
-            # if check_any_substring(name, ["None"]):
-            #     param.requires_grad = True
-            # else:
-            #     param.requires_grad = False
+            # param.requires_grad = False
+            if check_any_substring(name, finetune_layers):
+                param.requires_grad = True
+            else:
+                param.requires_grad = False
 
         self.hyponet = make(model_name=self.cfg.hyponet.model(), cfg=self.cfg, sd=None)
                
