@@ -24,8 +24,8 @@ class T0RegressionModel(nn.Module):
         finetune_layers = [
             # "block.23.layer.1.DenseReluDense.wi_0.weight",
             # "block.23.layer.1.DenseReluDense.wi_1.weight",
-            "block.23.layer.1.DenseReluDense.wo.weight"
-            # "None"
+            # "block.23.layer.1.DenseReluDense.wo.weight"
+            "None"
         ]
         for name, param in self.model.named_parameters():
             # param.requires_grad = False

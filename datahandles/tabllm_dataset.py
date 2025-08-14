@@ -94,8 +94,21 @@ class TabLLMDataObject():
         self.debug = cfg.debug_datasets() or cfg.debug()
         self.raw_data_path = self.cfg.datasets.tabllm.raw_data_path
         self.txt_data_path = self.cfg.datasets.tabllm.txt_data_path
+
+        self.train_ratio = self.cfg.datasets.train_ratio()
         self.test_ratio = self.cfg.datasets.test_ratio()
-        self.val_ratio = self.cfg.datasets.validation_ratio()
+                
+        self.train_size = self.cfg.datasets.train_size()
+        self.test_size = self.cfg.datasets.test_size()
+
+        if not isinstance(self.test_ratio, float) or not isinstance(self.train_ratio, float):
+            self.train_ratio = None
+            self.test_ratio = None
+        elif not isinstance(self.train_size, int) or not isinstance(self.test_size, int):
+            self.train_size = None
+            self.test_size = None
+        else:
+            print(f"split sizes not properly specified. test_ratio: {self.test_ratio}, train_ratio: {self.train_ratio}, test_size: {self.test_size}, train_size: {self.train_size}")   
 
         self.n_shots = self.cfg.datasets.n_shots()
         self.n_queries = self.cfg.datasets.n_queries()
@@ -131,11 +144,14 @@ class TabLLMDataObject():
         # create splits
         self.split_datapoints = {ds_name: {'data': self.split_and_concat_dfs(raw_dps, txt_dps, 
                                                            test_ratio=self.test_ratio, 
-                                                           val_ratio=self.val_ratio,
-                                                           seed=np.random.randint(low=0, high=100)) , 'template': Template(self.cfg, ds_name)}
+                                                           train_ratio=self.train_ratio,
+                                                           test_size=self.test_size,
+                                                           train_size=self.train_size,
+                                                           seed=np.random.randint(low=0, high=100),
+                                                           shuffle=False,
+                                                           note_column_name=TEXT_COL_NAME) , 'template': Template(self.cfg, ds_name)}
                                                            for ds_name, raw_dps, txt_dps in zip(self.all_ds_list, self.raw_datapoints, self.txt_datapoints)}
         
-
         self.data = {}
         for split in self.splits:
             self.data[split] = FewshotTabLLMDataset(cfg=self.cfg,
@@ -149,38 +165,52 @@ class TabLLMDataObject():
             self,
             df_features: pd.DataFrame,
             df_notes: pd.DataFrame,
-            val_ratio: float = 0.15,
-            test_ratio: float = 0.15,
-            shuffle: bool = True,
-            seed: int = 42,
+            train_ratio: float | None,
+            test_ratio: float | None,
+            test_size: int | None,
+            train_size: int | None,
+            shuffle: bool,
+            seed: int,
             note_column_name: str = TEXT_COL_NAME
         ) -> dict[str, pd.DataFrame]:
         """
         Splits two aligned DataFrames into train/val/test splits and concatenates the `note` column
         from df_notes into df_features.
 
+        Indices shuffled only after splitting. Hence, train, validation and test splits include examples in the
+        order that they are stored in the files.
+
         Returns:
             train_df, val_df, test_df — each containing features + a 'note' column
         """
-        train_ratio: float = 1 - val_ratio - test_ratio
-
         assert df_features.shape[0] == df_notes.shape[0], f"DataFrames must be the same length. Got {df_features.shape[0]} and {df_notes.shape[0]}"
         assert note_column_name in df_notes.columns, f"'{note_column_name}' column must exist in df_notes"
-        assert train_ratio >= 0, "Ratios must sum to 1.0"
 
         n = len(df_features)
         indices = np.arange(n)
-
-        if shuffle:
-            np.random.seed(seed)
-            np.random.shuffle(indices)
-
-        train_end = int(train_ratio * n)
-        val_end = train_end + int(val_ratio * n)
+        
+        if test_ratio is not None and train_ratio is not None:
+            val_ratio: float = 1 - train_ratio - test_ratio
+            assert val_ratio >= 0, "Split ratios must sum to 1.0"
+            train_end = int(train_ratio * n)
+            val_end = train_end + int(val_ratio * n)
+        elif test_size is not None and train_size is not None:
+            val_size = n - train_size - test_size
+            assert val_size >= 0, f"Split sizes must sum to {n}"
+            train_end = train_size
+            val_end = train_end + val_size
+        else:
+            print(f"Split ratios/sizes not properly defined") 
 
         train_idx = indices[:train_end]
         val_idx = indices[train_end:val_end]
         test_idx = indices[val_end:]
+        
+        if shuffle:
+            np.random.seed(seed=seed)
+            np.random.shuffle(train_idx)
+            np.random.shuffle(val_idx)
+            np.random.shuffle(test_idx)
 
         def concat(df_feat, df_note, idx):
             df_combined = df_feat.iloc[idx].copy().reset_index(drop=True)
@@ -249,8 +279,6 @@ class CombinedTabLLMTextDataset(CombinedTextDataset):
         else:
             return {'x': raw_x, 'y': raw_y}  # Return the raw input and label without text
             
-
-
 
 class FewshotTabLLMDataset(FewshotDataset):
     def __init__(self, cfg, split: str, datapoints:list[dict[str, Union[dict[str, pd.DataFrame],Template]]], max_n_features:int, n_shots: int, n_queries: int):
