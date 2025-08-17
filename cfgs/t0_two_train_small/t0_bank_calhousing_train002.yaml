@@ -43,7 +43,7 @@ trainer:
   name: t0_trainer
   batch_size: 1
   n_workers: 1
-  max_epoch: 40
+  max_epoch: 20
   eval_epoch: 1
   vis_epoch: 25
   save_epoch: 4
@@ -57,9 +57,9 @@ trainer:
 # dataset configuration
 datasets:
   data_root: ./data/
-  n_shots: 4
-  n_queries: 4
-  train_ratio: 0.001
+  n_shots: 5
+  n_queries: 5
+  train_ratio: 0.005
   test_ratio: 0.3
   train_size: ""
   test_size: ""
@@ -70,13 +70,15 @@ datasets:
     test: False
 
   list_combine_train: # list of datasets to combine
+    - bank
     - calhousing
+    
         
   list_combine_val: # list of datasets to combine for validation
-    - calhousing
+    - income
   
   list_combine_test: # list of datasets to combine for testing
-    - calhousing
+    - income
   
   adult:
     name: adult

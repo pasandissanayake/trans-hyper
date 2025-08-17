@@ -28,7 +28,6 @@ class T0RegressionModel(nn.Module):
             "None"
         ]
         for name, param in self.model.named_parameters():
-            # param.requires_grad = False
             if check_any_substring(name, finetune_layers):
                 param.requires_grad = True
             else:

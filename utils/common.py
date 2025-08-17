@@ -4,6 +4,8 @@ import time
 import logging
 
 import numpy as np
+import torch
+import torch.nn as nn
 from torch.optim import SGD, Adam
 from tensorboardX import SummaryWriter
 
@@ -14,6 +16,7 @@ def check_any_substring(target_string, list_of_substrings):
             return True
     return False
 
+
 def ensure_path(path, replace=True):
     basename = os.path.basename(path.rstrip('/'))
     if os.path.exists(path):
@@ -22,6 +25,53 @@ def ensure_path(path, replace=True):
             os.makedirs(path)
     else:
         os.makedirs(path)
+
+
+def dict_to_mlp(weight_dict: dict[str, torch.Tensor], in_dim:int) -> nn.Sequential:
+    """
+    Convert a dictionary of 'wbX' -> tensor(out_features, in_features+1)
+    into a PyTorch MLP with the given weights and biases.
+    
+    Args:
+        weight_dict: dict with keys like 'wb0', 'wb1', ... and tensors 
+                     where the last column is the bias.
+    
+    Returns:
+        model: nn.Sequential containing the layers with weights loaded.
+    """
+    layers = []
+    
+    # Sort layers by number (wb0, wb1, ...)
+    sorted_keys = sorted(weight_dict.keys(), key=lambda k: int(k[2:]))
+    
+    for i, key in enumerate(sorted_keys):
+        in_dim = in_dim + 1 # inputs and bias
+        wb = weight_dict[key][0]
+        out_dim = len(wb) // in_dim
+        wb = torch.reshape(wb, (in_dim, out_dim))
+
+        in_features = in_dim - 1  # last col = bias
+        out_features = out_dim
+        bias = wb[-1, :]
+        weight = wb[:-1, :]
+        
+        # Create linear layer
+        layer = nn.Linear(in_features, out_features)
+        
+        # Assign weights and bias (ensure no grad issues)
+        with torch.no_grad():
+            layer.weight.copy_(torch.transpose(weight, 0 ,1))
+            layer.bias.copy_(bias)
+        
+        layers.append(layer)
+        
+        # Optionally add non-linearity (ReLU here, skip after last)
+        if i < len(sorted_keys) - 1:
+            layers.append(nn.ReLU())
+
+        in_dim = out_dim
+    
+    return nn.Sequential(*layers)
 
 
 def set_logger(file_path):

@@ -1,2 +1,3 @@
-python main.py --name "t0pp-twotrain-calhousing-income" --cfg "cfgs/t0_two_train/t0_calhousing_income.yaml" --group "cal-income" -w
-python main.py --name "t0pp-twotrain-creditg-income" --cfg "cfgs/t0_two_train/t0_creditg_income.yaml" --group "creditg-income" -w
+python main.py --name "t0pp-twotrain-bank-income-train002" --cfg "cfgs/t0_two_train_small/t0_bank_income_train002.yaml" --group "two-train-small" -w
+python main.py --name "t0pp-twotrain-bank-calhousing-train002" --cfg "cfgs/t0_two_train_small/t0_bank_calhousing_train002.yaml" --group "two-train-small" -w
+python main.py --name "t0pp-twotrain-bank-calhousing-train005" --cfg "cfgs/t0_two_train_small/t0_bank_calhousing_train005.yaml" --group "two-train-small" -w

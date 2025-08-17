@@ -15,6 +15,8 @@ class BertTrainer(BaseTrainer):
         super().__init__(rank=rank, cfg=cfg, train_ds=train_ds, test_ds=test_ds)
         self.name = TRAINER_NAME
         self.tokenizer = models.make(model_name=self.cfg.tokenizer.name(), cfg=self.cfg, sd=None)
+        self.log(f"Number of shots: {cfg.datasets.n_shots()}")
+        self.log(f"Number of queries: {cfg.datasets.n_queries()}")
 
     def compute_loss(self, data):
         shots = data['shots']
