@@ -26,7 +26,7 @@ hyponet:
   in_dim: 0 # set during runtime
   out_dim: 2
   hidden_dim: 10
-  depth: 4
+  depth: 5
 
 
 # tokenizer configuration
@@ -59,7 +59,7 @@ datasets:
   data_root: ./data/
   n_shots: 4
   n_queries: 4
-  train_ratio: 0.001
+  train_ratio: 0.005
   test_ratio: 0.3
   train_size: ""
   test_size: ""
@@ -70,7 +70,8 @@ datasets:
     test: False
 
   list_combine_train: # list of datasets to combine
-    - calhousing
+    - bank
+    - income
         
   list_combine_val: # list of datasets to combine for validation
     - calhousing
