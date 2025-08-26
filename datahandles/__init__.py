@@ -5,4 +5,4 @@ from .adult import AdultDataset
 from .diabetes import DiabetesDataset
 from .tabllm_dataset import TabLLMDataObject, CombinedTabLLMTextDataset, FewshotTabLLMDataset
 
-from .new_tabllm_dataset import MetaDatasetBuilder
+from .metadataset_builder import MetaDatasetBuilder

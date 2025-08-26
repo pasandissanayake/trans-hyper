@@ -5,7 +5,7 @@ import yaml
 import wandb
 from datetime import datetime
 
-from datahandles import MetaDatasetBuilder
+from datahandles import FewshotDataset, TabLLMDataObject
 from utils import Config, ConfigObject
 from trainers import trainers
 
@@ -63,23 +63,9 @@ def train(cfg:Config, sweep:bool):
     if sweep:
         cfg = adopt_wandb_cfg(cfg, wandb.config)
 
-    meta_datasets = MetaDatasetBuilder(
-        data_root=cfg.datasets.data_root(),
-        train_datasets=cfg.datasets.list_combine_train(),
-        val_datasets=cfg.datasets.list_combine_val(),
-        test_datasets=cfg.datasets.list_combine_test(),
-        train_size=cfg.datasets.train_size(),
-        val_size=cfg.datasets.val_size(),
-        test_size=cfg.datasets.test_size(),
-        n_shots=cfg.datasets.n_shots(),
-        n_queries=cfg.datasets.n_queries(),
-        col_permutation=[],
-        shuffle=True,
-        max_n_features=103,
-        queries_same_as_shots=False,
-    ).get_datasets()
-    train_ds = meta_datasets['train']
-    test_ds = meta_datasets['val']
+    tabllm_data = TabLLMDataObject(cfg=cfg, set_hyponet_in_dim=True)
+    train_ds = tabllm_data.data['train']
+    test_ds = tabllm_data.data['test']
 
     trainer = trainers[cfg.trainer.name()](0, cfg, train_ds, test_ds) # type: ignore
     

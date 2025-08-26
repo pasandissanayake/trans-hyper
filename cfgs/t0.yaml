@@ -52,27 +52,25 @@ trainer:
     args:
       lr: 1.e-5
     
-
-
 # dataset configuration
 datasets:
   data_root: ./data/
   n_shots: 4
   n_queries: 4
-  train_ratio: 0.005
-  test_ratio: 0.3
-  train_size: 100
-  test_size: 100
-  val_size: 100
+  train_ratio: None
+  test_ratio: None
+  train_size: 40
+  val_size: 40
+  test_size: 1000
 
   balanced:
     train: True
-    val: False
+    val: True
     test: False
 
   list_combine_train: # list of datasets to combine
     - adult_income
-    - credit_risk
+    - loan_default
         
   list_combine_val: # list of datasets to combine for validation
     - credit_risk
@@ -80,22 +78,6 @@ datasets:
   list_combine_test: # list of datasets to combine for testing
     - credit_risk
   
-  adult:
-    name: adult
-    save_dir: adult
-    test_size: 0.2
-    validation_size: 0.5
-    n_features: 3
-    str_template: "<example>This is the adult income dataset. The final weight is {}. The capital gain is {}. The label is {}.</example>"
-    
-  diabetes:
-    name: diabetes
-    save_dir: diabetes
-    test_size: 0.2
-    validation_size: 0.1
-    n_features: 3
-    str_template: "<example>This is the diabetes dataset. The final weight is {}. The capital gain is {}. The label is {}.</example>"
-
   tabllm:
     raw_data_path: "tabllm/data/datasets"
     txt_data_path: "tabllm/data/datasets_serialized"
