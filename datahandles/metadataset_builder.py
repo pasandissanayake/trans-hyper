@@ -147,8 +147,11 @@ class FewShotDataset(Dataset):
         return self.split_size
 
     def __getitem__(self, index):
-        print(index)
-        index, permutation = index
+        if type(index) is tuple:
+            index, permutation = index
+        else:
+            index = index
+            permutation = self.col_permutation
 
         ds_name, shot_idx, query_idx = self.assignments[index]
         df = self.datasets[ds_name]
@@ -202,9 +205,9 @@ class MetaDatasetBuilder:
         train_size: int,
         val_size: int,
         test_size: int,
-        train_permutation: list,
-        val_permutation: list,
-        test_permutation: list,
+        train_permutation: list | bool,
+        val_permutation: list | bool,
+        test_permutation: list | bool,
         train_balance: bool,
         val_balance: bool,
         test_balance: bool,

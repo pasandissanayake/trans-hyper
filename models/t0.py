@@ -41,6 +41,8 @@ class T0RegressionModel(nn.Module):
         
         self.regressor = nn.Sequential(
             nn.Linear(self.model.config.d_model, total_params),
+            nn.ReLU(),
+            nn.Linear(total_params, total_params),
             nn.LayerNorm(normalized_shape=total_params)
         )
 

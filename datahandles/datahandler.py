@@ -202,7 +202,7 @@ class DataHandler:
 
         # Build row_text for each row safely with tuple indexing
         row_texts = [
-            ". ".join(f"{col} is {row[i]}" for col, i in zip(cols, col_indices))
+            ". ".join(f"The {col} is {row[i]}" for col, i in zip(cols, col_indices))
             for row in df.itertuples(index=False, name=None)  # name=None gives plain tuples
         ]
 

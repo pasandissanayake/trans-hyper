@@ -148,6 +148,10 @@ class BaseTrainer(ABC):
                 self.train_ds, self.cfg.trainer.batch_size(), self.cfg.trainer.n_workers(), shuffle=True, drop_last=True)
             self.dist_samplers.append(train_sampler)
             self.log(f"Train dataset size: {len(self.train_ds)}")
+            
+            for data in self.train_loader:
+                print(data)
+                break
         
         if self.test_ds is not None:
             self.test_loader, test_sampler = make_distributed_loader(

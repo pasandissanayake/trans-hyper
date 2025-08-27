@@ -71,9 +71,9 @@ def train(cfg:Config, sweep:bool):
         train_size=cfg.datasets.train_size(),
         val_size=cfg.datasets.val_size(),
         test_size=cfg.datasets.test_size(),
-        train_permutation=[],
-        val_permutation=[],
-        test_permutation=[],
+        train_permutation=False,
+        val_permutation=False,
+        test_permutation=False,
         train_balance=cfg.datasets.balanced.train(),
         val_balance=cfg.datasets.balanced.val(),
         test_balance=cfg.datasets.balanced.test(),
@@ -118,8 +118,6 @@ def main():
     else:
         train(cfg=cfg, sweep=False)
     
-
-
 
 if __name__ == "__main__":
     main()

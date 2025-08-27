@@ -26,7 +26,7 @@ hyponet:
   in_dim: 103
   out_dim: 2
   hidden_dim: 10
-  depth: 5
+  depth: 4
 
 
 # tokenizer configuration
@@ -35,7 +35,7 @@ tokenizer:
   model: bigscience/T0pp
   truncation: True
   padding: max_length
-  max_length: 128
+  max_length: 256
 
 
 # trainer configuration
@@ -43,10 +43,10 @@ trainer:
   name: t0_trainer
   batch_size: 1
   n_workers: 1
-  max_epoch: 40
+  max_epoch: 50
   eval_epoch: 1
   vis_epoch: 25
-  save_epoch: 4
+  save_epoch: 5
   optimizer:
     name: adam
     args:
@@ -55,12 +55,12 @@ trainer:
 # dataset configuration
 datasets:
   data_root: ./data/
-  n_shots: 4
-  n_queries: 4
+  n_shots: 5
+  n_queries: 5
   train_ratio: None
   test_ratio: None
-  train_size: 40
-  val_size: 40
+  train_size: 20
+  val_size: 20
   test_size: 1000
 
   balanced:
@@ -69,8 +69,8 @@ datasets:
     test: False
 
   list_combine_train: # list of datasets to combine
-    - adult_income
-    - loan_default
+    - bank
+    - income
         
   list_combine_val: # list of datasets to combine for validation
     - credit_risk
