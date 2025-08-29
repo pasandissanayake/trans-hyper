@@ -1,3 +1,4 @@
-python main.py --name "t0pp-twotrain-bank-income-train002" --cfg "cfgs/t0_two_train_small/t0_bank_income_train002.yaml" --group "two-train-small" -w
-python main.py --name "t0pp-twotrain-bank-calhousing-train002" --cfg "cfgs/t0_two_train_small/t0_bank_calhousing_train002.yaml" --group "two-train-small" -w
-python main.py --name "t0pp-twotrain-bank-calhousing-train005" --cfg "cfgs/t0_two_train_small/t0_bank_calhousing_train005.yaml" --group "two-train-small" -w
+# python main.py --name "t0pp-self-calhousing" --cfg "cfgs/t0_self/t0_calhousing.yaml" --group "t0pp-self-withperm" -w
+python main.py --name "t0pp-self-bank" --cfg "cfgs/t0_self/t0_bank.yaml" --group "t0pp-self-withperm" -w
+python main.py --name "t0pp-self-income" --cfg "cfgs/t0_self/t0_income.yaml" --group "t0pp-self-withperm" -w
+python main.py --name "t0pp-self-creditrisk" --cfg "cfgs/t0_self/t0_creditrisk.yaml" --group "t0pp-self-withperm" -w

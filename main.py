@@ -71,9 +71,9 @@ def train(cfg:Config, sweep:bool):
         train_size=cfg.datasets.train_size(),
         val_size=cfg.datasets.val_size(),
         test_size=cfg.datasets.test_size(),
-        train_permutation=False,
-        val_permutation=False,
-        test_permutation=False,
+        train_permutation=cfg.datasets.train_permutation(),
+        val_permutation=cfg.datasets.val_permutation(),
+        test_permutation=cfg.datasets.test_permutation(),
         train_balance=cfg.datasets.balanced.train(),
         val_balance=cfg.datasets.balanced.val(),
         test_balance=cfg.datasets.balanced.test(),
@@ -81,7 +81,7 @@ def train(cfg:Config, sweep:bool):
         n_queries=cfg.datasets.n_queries(),
         shuffle=True,
         max_n_features=103,
-        queries_same_as_shots=False,
+        queries_same_as_shots=cfg.datasets.queries_same_as_shots(),
         debug=cfg.debug() or cfg.debug_datasets()
     ).get_datasets()
     

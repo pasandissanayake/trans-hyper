@@ -5,6 +5,7 @@ import models
 from trainers import BaseTrainer
 from trainers import register
 import einops
+from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, balanced_accuracy_score
 
 TRAINER_NAME = "bert_trainer"
 
@@ -50,7 +51,7 @@ class BertTrainer(BaseTrainer):
         accuracy = 100 * correct / total
         return accuracy
     
-    def compute_accuracy(self, data):
+    def compute_metrics(self, data, acc_only=False):
         shots = data['shots']
         shots = self.tokenizer(shots)
         input_ids = shots['input_ids'].cuda()
@@ -59,20 +60,37 @@ class BertTrainer(BaseTrainer):
         queries_y = data['queries_y'].cuda()
 
         hyponet = self.model_ddp({'input_ids': input_ids, 'attention_mask': attention_mask})
+        predictions = einops.rearrange(hyponet(queries_x), "batch n_queries n_class -> (batch n_queries) n_class")
+        _, y_pred = torch.max(predictions, 1)
+        y_true = einops.rearrange(queries_y, "batch n_queries -> (batch n_queries)")
+        
+        acc = accuracy_score(y_true=y_true, y_pred=y_pred)
+        bal_acc = balanced_accuracy_score(y_true=y_true, y_pred=y_pred)
+        f1 = f1_score(y_true=y_true, y_pred=y_pred)
+        roc_auc = roc_auc_score(y_true=y_true, y_score=predictions[:, 1])
 
-        return self.accuracy(einops.rearrange(hyponet(queries_x), "batch n_queries n_class -> (batch n_queries) n_class"),
-                         einops.rearrange(queries_y, "batch n_queries -> (batch n_queries)"))
+        if acc_only:
+            return {'acc': acc}
+        else:
+            return {
+                'acc': acc,
+                'bal_acc': bal_acc,
+                'f1_score': f1,
+                'roc_auc': roc_auc
+            }
     
     def train_step(self, data):
         loss = self.compute_loss(data)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
-        acc = self.compute_accuracy(data)
-        return {'loss': loss.item(), 'acc': acc}
+        metrics = self.compute_metrics(data, acc_only=True)
+        metrics["loss"] = loss.item()
+        return metrics
 
     def evaluate_step(self, data):
         with torch.no_grad():
             loss = self.compute_loss(data)
-            acc = self.compute_accuracy(data)
-        return {'loss': loss.item(), 'acc': acc}
+            metrics = self.compute_metrics(data)
+            metrics["loss"] = loss.item()
+        return metrics

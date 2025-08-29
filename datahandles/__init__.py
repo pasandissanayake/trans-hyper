@@ -6,3 +6,4 @@ from .diabetes import DiabetesDataset
 from .tabllm_dataset import TabLLMDataObject, CombinedTabLLMTextDataset, FewshotTabLLMDataset
 
 from .metadataset_builder import MetaDatasetBuilder
+from .datahandler import DataHandler
