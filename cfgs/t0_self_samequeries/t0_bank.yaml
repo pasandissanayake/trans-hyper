@@ -46,7 +46,7 @@ trainer:
   max_epoch: 200
   eval_epoch: 1
   vis_epoch: 25
-  save_epoch: 20
+  save_epoch: 50
   optimizer:
     name: adam
     args:
@@ -69,7 +69,7 @@ datasets:
 
   balanced:
     train: True
-    val: True
+    val: False
     test: False
 
   list_combine_train: # list of datasets to combine

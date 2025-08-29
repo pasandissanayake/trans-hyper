@@ -6,6 +6,7 @@ from trainers import BaseTrainer
 from trainers import register
 import einops
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, balanced_accuracy_score
+import numpy as np
 
 TRAINER_NAME = "bert_trainer"
 
@@ -18,6 +19,9 @@ class BertTrainer(BaseTrainer):
         self.tokenizer = models.make(model_name=self.cfg.tokenizer.name(), cfg=self.cfg, sd=None)
         self.log(f"Number of shots: {cfg.datasets.n_shots()}")
         self.log(f"Number of queries: {cfg.datasets.n_queries()}")
+
+        self.current_best_eval_acc = 0
+        self.current_best_eval_balacc = 0
 
     def compute_loss(self, data):
         shots = data['shots']
@@ -61,8 +65,10 @@ class BertTrainer(BaseTrainer):
 
         hyponet = self.model_ddp({'input_ids': input_ids, 'attention_mask': attention_mask})
         predictions = einops.rearrange(hyponet(queries_x), "batch n_queries n_class -> (batch n_queries) n_class")
-        _, y_pred = torch.max(predictions, 1)
-        y_true = einops.rearrange(queries_y, "batch n_queries -> (batch n_queries)")
+        predictions = predictions.cpu().detach().numpy()
+
+        y_pred = np.argmax(predictions, axis=1)
+        y_true = einops.rearrange(queries_y, "batch n_queries -> (batch n_queries)").cpu().detach().numpy()
         
         acc = accuracy_score(y_true=y_true, y_pred=y_pred)
         bal_acc = balanced_accuracy_score(y_true=y_true, y_pred=y_pred)
@@ -93,4 +99,11 @@ class BertTrainer(BaseTrainer):
             loss = self.compute_loss(data)
             metrics = self.compute_metrics(data)
             metrics["loss"] = loss.item()
+        # save the current best checkpoint (w.r.t. accuracy)
+        if self.current_best_eval_acc <= metrics["acc"]:
+            self.current_best_eval_acc = metrics["acc"]
+            self.save_checkpoint('epoch-best-acc.pth')
+        if self.current_best_eval_balacc <= metrics["bal_acc"]:
+            self.current_best_eval_balacc = metrics["bal_acc"]
+            self.save_checkpoint('epoch-best-balacc.pth')
         return metrics
