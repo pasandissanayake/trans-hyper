@@ -6,6 +6,7 @@ from trainers import BaseTrainer
 from trainers import register
 import einops
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score, balanced_accuracy_score
+from torcheval.metrics import MulticlassAccuracy, BinaryF1Score, BinaryAUROC, BinaryRecall
 import numpy as np
 
 TRAINER_NAME = "bert_trainer"
@@ -55,7 +56,53 @@ class BertTrainer(BaseTrainer):
         accuracy = 100 * correct / total
         return accuracy
     
+    # def compute_metrics(self, data, acc_only=False):
+    #     shots = data['shots']
+    #     shots = self.tokenizer(shots)
+    #     input_ids = shots['input_ids'].cuda()
+    #     attention_mask = shots['attention_mask'].cuda()
+    #     queries_x = data['queries_x'].cuda()
+    #     queries_y = data['queries_y'].cuda()
+
+    #     hyponet = self.model_ddp({'input_ids': input_ids, 'attention_mask': attention_mask})
+    #     predictions = einops.rearrange(hyponet(queries_x), "batch n_queries n_class -> (batch n_queries) n_class")
+    #     predictions = predictions.cpu().detach().numpy()
+
+    #     y_pred = np.argmax(predictions, axis=1)
+    #     y_true = einops.rearrange(queries_y, "batch n_queries -> (batch n_queries)").cpu().detach().numpy()
+        
+    #     acc = accuracy_score(y_true=y_true, y_pred=y_pred)
+    #     bal_acc = balanced_accuracy_score(y_true=y_true, y_pred=y_pred)
+    #     f1 = f1_score(y_true=y_true, y_pred=y_pred)
+    #     roc_auc = roc_auc_score(y_true=y_true, y_score=predictions[:, 1])
+
+    #     if acc_only:
+    #         return {'acc': acc}
+    #     else:
+    #         return {
+    #             'acc': acc,
+    #             'bal_acc': bal_acc,
+    #             'f1_score': f1,
+    #             'roc_auc': roc_auc
+    #         }
+    
     def compute_metrics(self, data, acc_only=False):
+        """
+        Compute accuracy, balanced accuracy, F1 score, and ROC-AUC 
+        for binary classification using torcheval only.
+
+        Parameters
+        ----------
+        predictions : torch.Tensor
+            Raw model outputs (logits) of shape (N,) or (N, 1).
+        targets : torch.Tensor
+            Ground truth binary labels of shape (N,).
+
+        Returns
+        -------
+        dict
+            Dictionary containing accuracy, balanced accuracy, F1 score, and ROC-AUC.
+        """
         shots = data['shots']
         shots = self.tokenizer(shots)
         input_ids = shots['input_ids'].cuda()
@@ -65,26 +112,56 @@ class BertTrainer(BaseTrainer):
 
         hyponet = self.model_ddp({'input_ids': input_ids, 'attention_mask': attention_mask})
         predictions = einops.rearrange(hyponet(queries_x), "batch n_queries n_class -> (batch n_queries) n_class")
-        predictions = predictions.cpu().detach().numpy()
-
-        y_pred = np.argmax(predictions, axis=1)
-        y_true = einops.rearrange(queries_y, "batch n_queries -> (batch n_queries)").cpu().detach().numpy()
         
-        acc = accuracy_score(y_true=y_true, y_pred=y_pred)
-        bal_acc = balanced_accuracy_score(y_true=y_true, y_pred=y_pred)
-        f1 = f1_score(y_true=y_true, y_pred=y_pred)
-        roc_auc = roc_auc_score(y_true=y_true, y_score=predictions[:, 1])
+        targets = einops.rearrange(queries_y, "batch n_queries -> (batch n_queries)")
+
+        targets = targets.long().squeeze()
+
+        # Handle [N, 2] case: take positive class logits
+        if predictions.dim() == 2 and predictions.size(1) == 2:
+            predictions = predictions[:, 1]
+
+        predictions = predictions.squeeze()
+        probs = torch.sigmoid(predictions)  # probs for positive class
+        preds_binary = (probs >= 0.5).int()
+
+        # Accuracy
+        acc_metric = MulticlassAccuracy(num_classes=2, average="micro")
+        acc_metric.update(preds_binary, targets)
+        accuracy = acc_metric.compute().item()
+
+        # F1 Score
+        f1_metric = BinaryF1Score()
+        f1_metric.update(preds_binary, targets)
+        f1_score = f1_metric.compute().item()
+
+        # ROC AUC
+        rocauc_metric = BinaryAUROC()
+        rocauc_metric.update(probs, targets)
+        roc_auc = rocauc_metric.compute().item()
+
+        # Recall for positive class (TPR / sensitivity)
+        recall_pos = BinaryRecall()
+        recall_pos.update(preds_binary, targets)
+        tpr = recall_pos.compute().item()
+
+        # Recall for negative class (TNR / specificity) by label swap
+        recall_neg = BinaryRecall()
+        recall_neg.update(1 - preds_binary, 1 - targets)
+        tnr = recall_neg.compute().item()
+
+        balanced_accuracy = (tpr + tnr) / 2.0
 
         if acc_only:
-            return {'acc': acc}
-        else:
-            return {
-                'acc': acc,
-                'bal_acc': bal_acc,
-                'f1_score': f1,
-                'roc_auc': roc_auc
-            }
-    
+            return {"acc": accuracy}
+
+        return {
+            "acc": accuracy,
+            "bal_acc": balanced_accuracy,
+            "f1_score": f1_score,
+            "roc_auc": roc_auc,
+        }
+
     def train_step(self, data):
         loss = self.compute_loss(data)
         self.optimizer.zero_grad()
