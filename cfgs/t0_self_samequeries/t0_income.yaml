@@ -44,7 +44,7 @@ trainer:
   batch_size: 1
   n_workers: 1
   max_epoch: 200
-  eval_epoch: 1
+  eval_epoch: 5
   vis_epoch: 25
   save_epoch: 50
   optimizer:

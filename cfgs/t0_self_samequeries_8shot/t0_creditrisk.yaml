@@ -55,11 +55,11 @@ trainer:
 # dataset configuration
 datasets:
   data_root: ./data/
-  n_shots: 8
-  n_queries: 8
+  n_shots: 4
+  n_queries: 4
   train_ratio: None
   test_ratio: None
-  train_size: 8
+  train_size: 2
   val_size: 20
   test_size: 1000
   train_permutation: True

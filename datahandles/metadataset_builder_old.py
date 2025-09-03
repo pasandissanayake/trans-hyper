@@ -41,32 +41,25 @@ class FewShotDataset(Dataset):
 
         # Load all datasets
         self.datasets = {}
+        self.handlers = {}
         self.prompts = {}
         self.max_features = 0
         self.class_indices = {}
 
         for name in dataset_names:
-            col_perm = self.col_permutation.copy()
-            if split == "val":
-                handler = DataHandler(self.data_root / name, split="train")
-                col_perm.extend([i for i in range(handler.n_features) if i not in col_perm])
-                full_df, full_prompts = handler.get_split(col_permutation=col_perm,
-                                                          shuffle=self.shuffle,
-                                                          preprocess=True)
-                
-                # Use only the leftover rows as validation
-                df = full_df.tail(split_size).reset_index(drop=True)
-                prompts = full_prompts.tail(split_size).reset_index(drop=True)
+            handler = DataHandler(self.data_root / name)
+            if self.split == "test":
+                df = handler.test_df
+            elif self.split in ["train", "val"]:
+                df = handler.train_df
+                if self.split == "val":
+                    df = df[::-1].reset_index(drop=True) # reverse the order, so that validation examples are chosen from the bottom of the dataframe
             else:
-                handler = DataHandler(self.data_root / name, split=split)
-                col_perm.extend([i for i in range(handler.n_features) if i not in col_perm])
-                df, prompts = handler.get_split(col_permutation=col_perm,
-                                                shuffle=self.shuffle,
-                                                preprocess=True)
-
+                raise ValueError(f"Split should be one of train, val or test. Received {self.split}")
+                
             self.datasets[name] = df
-            self.prompts[name] = prompts
-            self.max_features = max(self.max_features, df.shape[1])
+            self.handlers[name] = handler
+            self.max_features = max(self.max_features, handler.n_features_preproc)
 
             # Precompute class indices for balancing
             target_col = handler.target_name
@@ -154,24 +147,40 @@ class FewShotDataset(Dataset):
         return self.split_size
 
     def __getitem__(self, index):
+        if type(index) is tuple:
+            index, permutation = index
+        else:
+            index = index
+            permutation = self.col_permutation
+
         ds_name, shot_idx, query_idx = self.assignments[index]
         df = self.datasets[ds_name]
-        prompts = self.prompts[ds_name]
+        handler = self.handlers[ds_name]
+
+        if permutation == True:
+            permutation = list(np.random.permutation(handler.n_features))
+        elif permutation == False:
+            permutation = []
 
         # Shots = text+label strings
-        shots = [prompts.iloc[i] for i in shot_idx]
-        shots = "".join([f"Example: {shot[TEXT_COL_NAME]} {shot[TARGET_COL_NAME]}\n\n" for shot in shots])
-
+        shots_df = df.iloc[shot_idx]
+        shots_df = handler.apply_permutation(shots_df, permutation)
+        prompts = handler.apply_template(shots_df)
+        shots = "".join([f"Example {i}: {shot[TEXT_COL_NAME]} {shot[TARGET_COL_NAME]}\n\n" for i, shot in prompts.iterrows()])
+        
         # Queries
-        queries_x = df.iloc[query_idx, :-1].to_numpy(dtype=np.float32)
-        queries_y = df.iloc[query_idx, -1].to_numpy(dtype=np.int64)
+        query_df = df.iloc[query_idx]
+        query_df = handler.apply_permutation(query_df, permutation)
+        query_df = handler.preprocess(query_df)
+        queries_x = query_df.iloc[:, :-1].to_numpy(dtype=np.float32)
+        queries_y = query_df.iloc[:, -1].to_numpy(dtype=np.int64)
 
         # Pad/truncate queries_x
-        if queries_x.shape[1] < self.pad_to:
+        if queries_x.shape[1] <= self.pad_to:
             pad = np.zeros((queries_x.shape[0], self.pad_to - queries_x.shape[1]), dtype=np.float32)
             queries_x = np.concatenate([queries_x, pad], axis=1)
         else:
-            queries_x = queries_x[:, :self.pad_to]
+            raise ValueError(f"Padding error: Dataset: {ds_name}, max no. of features: {self.pad_to}, available no. of features: {queries_x.shape[1]}")
 
         return {
             "dataset": ds_name,
@@ -196,9 +205,9 @@ class MetaDatasetBuilder:
         train_size: int,
         val_size: int,
         test_size: int,
-        train_permutation: list,
-        val_permutation: list,
-        test_permutation: list,
+        train_permutation: list | bool,
+        val_permutation: list | bool,
+        test_permutation: list | bool,
         train_balance: bool,
         val_balance: bool,
         test_balance: bool,
