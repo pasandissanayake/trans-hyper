@@ -121,7 +121,6 @@ class DataHandler:
         
         return df_proc
 
-
     def _onehot_encode_multiple(self, df, cat_dict, drop_unknown=False):
         """
         One-hot encode multiple categorical columns based on given categories,
