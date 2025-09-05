@@ -1,0 +1,2 @@
+python main.py --name "t0pp-self-creditrisk-self-n8" --cfg "cfgs/t0_self_samequeries_8shot/t0_creditrisk.yaml" --group "t0pp-self-sameq-n8" -w
+python main.py --name "t0pp-self-income-self-n8" --cfg "cfgs/t0_self_samequeries_8shot/t0_income.yaml" --group "t0pp-self-sameq-n8" -w

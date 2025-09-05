@@ -1,3 +1,2 @@
-python main.py --name "t0pp-twotrain-bank-income-train002" --cfg "cfgs/t0_two_train_small/t0_bank_income_train002.yaml" --group "two-train-small" -w
-python main.py --name "t0pp-twotrain-bank-calhousing-train002" --cfg "cfgs/t0_two_train_small/t0_bank_calhousing_train002.yaml" --group "two-train-small" -w
-python main.py --name "t0pp-twotrain-bank-calhousing-train005" --cfg "cfgs/t0_two_train_small/t0_bank_calhousing_train005.yaml" --group "two-train-small" -w
+python main.py --name "t0pp-self-calhousing-self-n8" --cfg "cfgs/t0_self_samequeries_8shot/t0_calhousing.yaml" --group "t0pp-self-sameq-n8" -w
+python main.py --name "t0pp-self-bank-self-n8" --cfg "cfgs/t0_self_samequeries_8shot/t0_bank.yaml" --group "t0pp-self-sameq-n8" -w

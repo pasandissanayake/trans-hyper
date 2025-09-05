@@ -1,5 +1,5 @@
 # experiment configuration
-name: t0
+name: t0-self-calhousing
 save_dir: './save/'
 eval_model: false # "/export/pasand/trans-hyper/save/t0pp-calhouse-finonly/epoch-10.pth"
 wandb_auth: 'wandb_auth.yaml'
@@ -43,23 +43,23 @@ trainer:
   name: t0_trainer
   batch_size: 1
   n_workers: 1
-  max_epoch: 500
-  eval_epoch: 1
+  max_epoch: 200
+  eval_epoch: 5
   vis_epoch: 25
   save_epoch: 50
   optimizer:
     name: adam
     args:
-      lr: 1.e-6
+      lr: 1.e-5
     
 # dataset configuration
 datasets:
   data_root: ./data/
-  n_shots: 5
-  n_queries: 5
+  n_shots: 8
+  n_queries: 8
   train_ratio: None
   test_ratio: None
-  train_size: 6
+  train_size: 8
   val_size: 20
   test_size: 1000
   train_permutation: True
@@ -69,18 +69,17 @@ datasets:
 
   balanced:
     train: True
-    val: True
+    val: False
     test: False
 
   list_combine_train: # list of datasets to combine
-    - bank
     - calhousing
         
   list_combine_val: # list of datasets to combine for validation
-    - credit_risk
+    - calhousing
   
   list_combine_test: # list of datasets to combine for testing
-    - credit_risk
+    - calhousing
   
   tabllm:
     raw_data_path: "tabllm/data/datasets"

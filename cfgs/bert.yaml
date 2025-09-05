@@ -63,6 +63,10 @@ datasets:
   test_ratio: 0.3
   train_size: ""
   test_size: ""
+  train_permutation: True
+  val_permutation: True
+  test_permutation: True
+  queries_same_as_shots: True
   
   balanced:
     train: True
