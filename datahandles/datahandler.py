@@ -76,7 +76,7 @@ class DataHandler:
         self.apply_permutation = apply_permutation
 
         self.n_features = len(self.columns) # number of features before pre-processing
-        self.n_features_preproc = self.preprocess(self.train_df.iloc[0:1]).shape[1] # number of features after pre-processing
+        self.n_features_preproc = self.preprocess(df=self.train_df.iloc[0:1]).shape[1] # number of features after pre-processing
 
     def _preprocess_numerical(self, ref_df, df, num_cols, method="standard"):
         """

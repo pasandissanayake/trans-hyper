@@ -22,9 +22,10 @@ class FewShotDataset(Dataset):
         queries_same_as_shots: bool,
         max_n_features: int,
         balance_labels: bool,
-        col_permutation: list,
+        col_permutation: bool,
         shuffle: bool,
-        debug: bool
+        debug: bool,
+        shots_with_labels: bool = True,
     ):
         super().__init__()
         self.dataset_names = dataset_names
@@ -38,6 +39,7 @@ class FewShotDataset(Dataset):
         self.shuffle = shuffle
 
         self.col_permutation = col_permutation
+        self.shots_with_labels = shots_with_labels
 
         # Load all datasets
         self.datasets = {}
@@ -166,7 +168,10 @@ class FewShotDataset(Dataset):
         shots_df = df.iloc[shot_idx]
         shots_df = handler.apply_permutation(shots_df, permutation)
         prompts = handler.apply_template(shots_df)
-        shots = "".join([f"Example {i}: {shot[TEXT_COL_NAME]} {shot[TARGET_COL_NAME]}\n\n" for i, shot in prompts.iterrows()])
+        if self.shots_with_labels:
+            shots = "".join([f"Example {i}: {shot[TEXT_COL_NAME]} {shot[TARGET_COL_NAME]}\n\n" for i, shot in prompts.iterrows()])
+        else:
+            shots = "".join([f"Example {i}: {shot[TEXT_COL_NAME]}\n\n" for i, shot in prompts.iterrows()])
         
         # Queries
         query_df = df.iloc[query_idx]
@@ -205,9 +210,9 @@ class MetaDatasetBuilder:
         train_size: int,
         val_size: int,
         test_size: int,
-        train_permutation: list | bool,
-        val_permutation: list | bool,
-        test_permutation: list | bool,
+        train_permutation: bool,
+        val_permutation: bool,
+        test_permutation: bool,
         train_balance: bool,
         val_balance: bool,
         test_balance: bool,
@@ -217,6 +222,7 @@ class MetaDatasetBuilder:
         shuffle: bool,
         queries_same_as_shots: bool,
         debug: bool,
+        shots_with_labels: dict[str, bool] = {"train": True, "val": True, "test": True},
     ):
         self.datasets = {
             "train": FewShotDataset(
@@ -231,7 +237,8 @@ class MetaDatasetBuilder:
                 shuffle=shuffle,
                 queries_same_as_shots=queries_same_as_shots,
                 balance_labels=train_balance,
-                debug=debug
+                debug=debug,
+                shots_with_labels=shots_with_labels["train"]
             ),
             "val": FewShotDataset(
                 dataset_names=val_datasets,
@@ -245,7 +252,8 @@ class MetaDatasetBuilder:
                 queries_same_as_shots=queries_same_as_shots,
                 max_n_features=max_n_features,
                 balance_labels=val_balance,
-                debug=debug
+                debug=debug,
+                shots_with_labels=shots_with_labels["val"]
             ),
             "test": FewShotDataset(
                 dataset_names=test_datasets,
@@ -259,7 +267,8 @@ class MetaDatasetBuilder:
                 queries_same_as_shots=queries_same_as_shots,
                 max_n_features=max_n_features,
                 balance_labels=test_balance,
-                debug=debug
+                debug=debug,
+                shots_with_labels=shots_with_labels["test"]
             ),
         }
 

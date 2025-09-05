@@ -1,76 +1,115 @@
 import copy
-import os
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split
+from sklearn.utils import resample
+from sklearn.model_selection import KFold
 
 
-datahandles = {}
+def make_kfolds(df: pd.DataFrame, k: int, random_state: int = 42, shuffle: bool = True):
+    """
+    Split a dataframe into k folds (non-stratified).
+    
+    Returns a list of (train_df, val_df) tuples.
+    """
+    kf = KFold(n_splits=k, shuffle=shuffle, random_state=random_state)
+    folds = []
+    for train_idx, val_idx in kf.split(df):
+        train_df, val_df = df.iloc[train_idx], df.iloc[val_idx]
+        folds.append((train_df.reset_index(drop=True), val_df.reset_index(drop=True)))
+    return folds
 
 
-def register(name):
-    def decorator(cls):
-        datahandles[name] = cls
-        return cls
-    return decorator
+def balance_dataframe(df: pd.DataFrame, target_col: str, method: str = "undersample", random_state: int = 42) -> pd.DataFrame:
+    """
+    Balance a DataFrame by oversampling or undersampling the target column.
 
+    Args:
+        df (pd.DataFrame): Input dataframe
+        target_col (str): Name of target column
+        method (str): "undersample" | "oversample"
+        random_state (int): Random seed for reproducibility
 
-def make(dataset_spec, args=None):
-    if args is not None:
-        dataset_args = copy.deepcopy(dataset_spec['args'])
-        dataset_args.update(args)
+    Returns:
+        pd.DataFrame: Balanced dataframe
+    """
+    # Split by class
+    classes = df[target_col].unique()
+    dfs = [df[df[target_col] == c] for c in classes]
+
+    if method == "undersample":
+        min_size = min(len(d) for d in dfs)
+        dfs_balanced = [resample(d, replace=False, n_samples=min_size, random_state=random_state) for d in dfs]
+
+    elif method == "oversample":
+        max_size = max(len(d) for d in dfs)
+        dfs_balanced = [resample(d, replace=True, n_samples=max_size, random_state=random_state) for d in dfs]
+
     else:
-        dataset_args = dataset_spec['args']
-    dataset = datahandles[dataset_spec['name']](**dataset_args)
-    return dataset
+        raise ValueError("method must be 'undersample' or 'oversample'")
+
+    return pd.concat(dfs_balanced).sample(frac=1, random_state=random_state).reset_index(drop=True)
 
 
-def preprocess_numeric(cfg, df, target_col, n_features, random_state=42):
-    # Select only numerical features
-    numeric_cols = df.drop(columns=[target_col]).select_dtypes(include=['int64', 'float64']).columns
-    if len(numeric_cols) < n_features:
-        raise ValueError(f"Not enough numeric features in the dataset. Found {len(numeric_cols)}, required {n_features}.")
-    selected_cols = list(numeric_cols[:n_features])
-        
-    # Normalize and center
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(df[selected_cols])
-    
-    X = pd.DataFrame(X_scaled, columns=selected_cols)
-    y = df[target_col].reset_index(drop=True)
-    
-    # Merge and shuffle
-    data = pd.concat([X, y], axis=1)
-    
-    # Split
-    train, temp = train_test_split(data, test_size=0.3, stratify=y, random_state=random_state)
-    val, test = train_test_split(temp, test_size=0.5, stratify=temp[target_col], random_state=random_state)
-    
-    return {
-        'train': train.reset_index(drop=True),
-        'val': val.reset_index(drop=True),
-        'test': test.reset_index(drop=True)
-    }
+def sample_dataframe(
+    df: pd.DataFrame,
+    target_col: str,
+    n_samples: int,
+    method: str = "stratified",
+    random_state: int = 42,
+) -> pd.DataFrame:
+    """
+    Deterministically sample from a dataframe in either stratified or balanced manner.
 
+    Args:
+        df (pd.DataFrame): Input dataframe
+        target_col (str): Target column name
+        n_samples (int): Total number of samples desired
+        method (str): "stratified" or "balanced"
+        random_state (int): Random seed for reproducibility
 
-class RawDataset:
-    def __init__(self, cfg):
-        self.cfg = cfg
-        self.dataset_cfg = getattr(self.cfg.datasets, self.name)
-        self.save_dir = os.path.join(self.cfg.datasets.data_root(), self.dataset_cfg.save_dir())
-        self.n_features = self.dataset_cfg.n_features()
-        self.debug = self.cfg.debug_datasets() or self.cfg.debug()
+    Returns:
+        pd.DataFrame: Sampled dataframe (deterministic order)
+    """
+    classes = sorted(df[target_col].unique())  # ensure fixed order
+    dfs = [df[df[target_col] == c].sort_values(by=df.columns.tolist()).reset_index(drop=True) for c in classes]
 
-        if self.debug: print(f"Initializing {self.name} dataset with save_dir: {self.save_dir} and n_features: {self.n_features}")
+    if method == "stratified":
+        total = len(df)
+        sampled_dfs = []
+        for d in dfs:
+            frac = len(d) / total
+            n_class_samples = int(round(n_samples * frac))
+            sampled_dfs.append(
+                resample(
+                    d, replace=False,
+                    n_samples=min(n_class_samples, len(d)),
+                    random_state=random_state
+                )
+            )
 
-        if self.save_dir is None:
-            raise ValueError("Save directory must be specified in the configuration.")
-        
-        self._fetch_data()
-                
-        if self.debug: print(f"Train shape: {self.data['train'].shape}, Val shape: {self.data['val'].shape}, Test shape: {self.data['test'].shape}")
+    elif method == "balanced":
+        per_class = n_samples // len(classes)
+        sampled_dfs = []
+        for d in dfs:
+            if len(d) < per_class:
+                sampled_dfs.append(
+                    resample(
+                        d, replace=True,
+                        n_samples=per_class,
+                        random_state=random_state
+                    )
+                )
+            else:
+                sampled_dfs.append(
+                    resample(
+                        d, replace=False,
+                        n_samples=per_class,
+                        random_state=random_state
+                    )
+                )
 
-    def __getitem__(self, split):
-        if split not in ['train', 'val', 'test']:
-            raise ValueError(f"Invalid split: {split}. Must be one of ['train', 'val', 'test'].")
-        return self.data[split]
+    else:
+        raise ValueError("method must be 'stratified' or 'balanced'")
+
+    # Concatenate and shuffle deterministically
+    result = pd.concat(sampled_dfs).sample(frac=1, random_state=random_state).reset_index(drop=True)
+    return result
