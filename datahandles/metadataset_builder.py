@@ -71,7 +71,7 @@ class FewShotDataset(Dataset):
 
         # Decide pad dimension
         self.pad_to = max_n_features if max_n_features is not None else self.max_features
-
+        
         # Build assignments
         self.assignments = []
         self.ds_counts = {}
@@ -100,15 +100,19 @@ class FewShotDataset(Dataset):
 
     def _assign_sequential(self, ds_name, i):
         df = self.datasets[ds_name]
-        start = (i * (self.n_shots + self.n_queries)) % len(df)
+        print(f"Dataset: {ds_name}, number of examples: {len(df)}")
+        # start = (i * (self.n_shots + self.n_queries)) % len(df)
+        start = (i * (self.n_shots + self.n_queries))
         shot_idx = list(range(start, start + self.n_shots))
         query_idx = (
             shot_idx
             if self.queries_same_as_shots
             else list(range(start + self.n_shots, start + self.n_shots + self.n_queries))
         )
-        shot_idx = [idx % len(df) for idx in shot_idx]
-        query_idx = [idx % len(df) for idx in query_idx]
+        # shot_idx = [idx % len(df) for idx in shot_idx]
+        # query_idx = [idx % len(df) for idx in query_idx]
+        shot_idx = [idx for idx in shot_idx]
+        query_idx = [idx for idx in query_idx]
         return (ds_name, shot_idx, query_idx)
 
     def _assign_balanced(self, ds_name, i):
@@ -193,6 +197,9 @@ class FewShotDataset(Dataset):
             "queries_x": torch.tensor(queries_x),
             "queries_y": torch.tensor(queries_y),
         }
+    
+    def set_pad_length(self, pad_length):
+        self.pad_to = pad_length
 
 
 
@@ -222,7 +229,7 @@ class MetaDatasetBuilder:
         shuffle: bool,
         queries_same_as_shots: bool,
         debug: bool,
-        shots_with_labels: dict[str, bool] = {"train": True, "val": True, "test": True},
+        shots_with_labels: dict[str, bool] = {"train": True, "val": True, "test": False},
     ):
         self.datasets = {
             "train": FewShotDataset(
@@ -271,6 +278,20 @@ class MetaDatasetBuilder:
                 shots_with_labels=shots_with_labels["test"]
             ),
         }
+
+        if max_n_features is None:
+            # Set pad length to the max no. of features across datasets
+            pad_length = max(
+                [
+                    self.datasets[split].max_features
+                    for split in ["train", "val", "test"]
+                ]
+            )
+            for split in ["train", "val", "test"]:
+                self.datasets[split].set_pad_length(pad_length)
+            self.max_n_features = pad_length
+        else:
+            self.max_n_features = max_n_features
 
     def get_datasets(self):
         return self.datasets

@@ -5,7 +5,7 @@ import yaml
 import wandb
 from datetime import datetime
 
-from datahandles import MetaDatasetBuilder
+from datahandles import KFoldDatasetBuilder
 from utils import Config, ConfigObject
 from trainers import trainers
 
@@ -63,38 +63,30 @@ def train(cfg:Config, sweep:bool):
     if sweep:
         cfg = adopt_wandb_cfg(cfg, wandb.config)
 
-    meta_dataset_builder = MetaDatasetBuilder(
-        data_root=cfg.datasets.data_root(),
-        train_datasets=cfg.datasets.list_combine_train(),
-        val_datasets=cfg.datasets.list_combine_val(),
-        test_datasets=cfg.datasets.list_combine_test(),
-        train_size=cfg.datasets.train_size(),
-        val_size=cfg.datasets.val_size(),
-        test_size=cfg.datasets.test_size(),
-        train_permutation=cfg.datasets.train_permutation(),
-        val_permutation=cfg.datasets.val_permutation(),
-        test_permutation=cfg.datasets.test_permutation(),
-        train_balance=cfg.datasets.balanced.train(),
-        val_balance=cfg.datasets.balanced.val(),
-        test_balance=cfg.datasets.balanced.test(),
-        n_shots=cfg.datasets.n_shots(),
-        n_queries=cfg.datasets.n_queries(),
-        shuffle=True,
-        max_n_features=cfg.datasets.max_n_features() if cfg.datasets.max_n_features() else None,
-        queries_same_as_shots=cfg.datasets.queries_same_as_shots(),
-        debug=cfg.debug() or cfg.debug_datasets()
-    )
+    col_permutations = {"train": cfg.dataset.col_permutations.train(),
+                        "val": cfg.dataset.col_permutations.val(),
+                        "test": cfg.dataset.col_permutations.test()}
+    balanced = {"train": cfg.dataset.balanced.train(),
+                "val": cfg.dataset.balanced.val(),
+                "test": cfg.dataset.balanced.test()}
+    kfold_datasets = KFoldDatasetBuilder(dataset_name=cfg.dataset.name(),
+                                         data_root=cfg.dataset.data_root(),
+                                         col_permutations=col_permutations,
+                                         train_size=cfg.dataset.train_size(),
+                                         n_folds=cfg.dataset.n_folds(),
+                                         n_shots=cfg.dataset.n_shots(),
+                                         max_n_features=cfg.dataset.max_n_features(),
+                                         balanced=balanced,
+                                         overlap_shots_queries=cfg.dataset.overlap_shots_queries(),
+                                         eval_shots_from_train=cfg.dataset.eval_shots_from_train(),
+                                         eval_shots_with_labels=cfg.dataset.eval_shots_with_labels(),
+                                        ).get_datasets()
     
-    meta_datasets = meta_dataset_builder.get_datasets()
-    
-    train_ds = meta_datasets['train']
-    test_ds = meta_datasets['train']
-
-    # set the hyponet input dimension from dataset
-    if cfg.datasets.set_hyponet_indim():
-        cfg.hyponet.in_dim(meta_dataset_builder.max_n_features) 
+    train_ds = kfold_datasets['train']
+    test_ds = None
 
     trainer = trainers[cfg.trainer.name()](0, cfg, train_ds, test_ds) # type: ignore
+    
     trainer.run()
 
 def main():
