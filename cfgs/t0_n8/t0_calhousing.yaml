@@ -18,7 +18,7 @@ debug_trainer: false
 # hypernet configuration
 hypernet:
   name: t0
-  model: bigscience/T0_3B
+  model: bigscience/T0pp
 
 
 # hyponet configuration
@@ -33,7 +33,7 @@ hyponet:
 # tokenizer configuration
 tokenizer:
   name: t0_tokenizer
-  model: bigscience/T0_3B
+  model: bigscience/T0pp
   truncation: True
   padding: max_length
   max_length: 128
