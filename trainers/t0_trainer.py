@@ -17,11 +17,14 @@ class T0Trainer(BertTrainer):
     def adjust_learning_rate(self):
         base_lr = self.cfg.trainer.optimizer.args.lr()
 
-        # if self.epoch >= 100:
-        #     lr = base_lr * 0.1
-        # else:
-        #     lr = base_lr
-        lr = base_lr
+        # with schedule
+        if self.epoch >= 100:
+            lr = base_lr * 0.5
+        else:
+            lr = base_lr
+        
+        # # no schedule
+        # lr = base_lr
             
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = lr

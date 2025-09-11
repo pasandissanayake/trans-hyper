@@ -157,9 +157,9 @@ class BertTrainer(BaseTrainer):
 
         return {
             # "acc": accuracy,
-            # "bal_acc": balanced_accuracy,
+            "bal_acc": balanced_accuracy,
             # "f1_score": f1_score,
-            "roc_auc": roc_auc,
+            # "roc_auc": roc_auc,
         }
 
     def train_step(self, data):
@@ -177,10 +177,10 @@ class BertTrainer(BaseTrainer):
             metrics = self.compute_metrics(data)
             metrics["loss"] = loss.item()
         # save the current best checkpoint (w.r.t. roc_auc)
-        if self.current_best_eval_acc < metrics["roc_auc"]:
-            self.current_best_eval_acc = metrics["roc_auc"]
-            self.save_checkpoint('epoch-best-rocauc.pth')
-        # if self.current_best_eval_balacc <= metrics["bal_acc"]:
-        #     self.current_best_eval_balacc = metrics["bal_acc"]
-        #     self.save_checkpoint('epoch-best-balacc.pth')
+        # if self.current_best_eval_acc < metrics["roc_auc"]:
+        #     self.current_best_eval_acc = metrics["roc_auc"]
+        #     self.save_checkpoint('epoch-best-rocauc.pth')
+        if self.current_best_eval_balacc < metrics["bal_acc"]:
+            self.current_best_eval_balacc = metrics["bal_acc"]
+            self.save_checkpoint('epoch-best-balacc.pth')
         return metrics

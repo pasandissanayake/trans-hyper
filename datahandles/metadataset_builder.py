@@ -75,14 +75,22 @@ class FewShotDataset(Dataset):
         # Build assignments
         self.assignments = []
         self.ds_counts = {}
+        block_size = self.n_queries if self.queries_same_as_shots else (self.n_shots + self.n_queries)
+        i = 0
         rng = np.random.RandomState(42)
-        for i in range(split_size):
+        while len(self.assignments) < self.split_size:
             ds_name = rng.choice(dataset_names)
             # keep track of the number of datapoints coming from each dataset, for debugging purposes
             if ds_name in self.ds_counts.keys():
-                self.ds_counts[str(ds_name)] += 1
+                self.ds_counts[str(ds_name)] += block_size
             else:
-                self.ds_counts[str(ds_name)] = 1
+                self.ds_counts[str(ds_name)] = block_size
+
+            # check whether the dataset has enough examples
+            if len(self.datasets[ds_name]) < (i+1)*block_size:
+                self.ds_counts[str(ds_name)] -= block_size
+                dataset_names.remove(ds_name)
+                continue
 
             if balance_labels:
                 self.assignments.append(
@@ -92,6 +100,8 @@ class FewShotDataset(Dataset):
                 self.assignments.append(
                     self._assign_sequential(ds_name, i)
                 )
+            
+            i += 1
 
         if debug: 
             print(f"Split: {split}, number of data point: {self.ds_counts}, balanced: {self.balance_labels}")
@@ -99,20 +109,17 @@ class FewShotDataset(Dataset):
 
 
     def _assign_sequential(self, ds_name, i):
-        df = self.datasets[ds_name]
-        print(f"Dataset: {ds_name}, number of examples: {len(df)}")
-        # start = (i * (self.n_shots + self.n_queries)) % len(df)
-        start = (i * (self.n_shots + self.n_queries))
+        start = (i * self.n_queries
+                 if self.queries_same_as_shots
+                 else i * (self.n_shots + self.n_queries)
+        )
         shot_idx = list(range(start, start + self.n_shots))
         query_idx = (
-            shot_idx
+            list(range(start, start + self.n_queries))
             if self.queries_same_as_shots
             else list(range(start + self.n_shots, start + self.n_shots + self.n_queries))
         )
-        # shot_idx = [idx % len(df) for idx in shot_idx]
-        # query_idx = [idx % len(df) for idx in query_idx]
-        shot_idx = [idx for idx in shot_idx]
-        query_idx = [idx for idx in query_idx]
+        # print(f"Dataset: {ds_name}, number of examples: {len(self.datasets[ds_name])}, current end index: {query_idx[-1]}")
         return (ds_name, shot_idx, query_idx)
 
     def _assign_balanced(self, ds_name, i):
@@ -121,32 +128,21 @@ class FewShotDataset(Dataset):
         labels = list(class_indices.keys())
         n_classes = len(labels)
 
-        # Shots: distribute equally across labels
+        block_size = self.n_queries if self.queries_same_as_shots else (self.n_shots + self.n_queries)
+        queries_per_class = max(1, self.n_queries // n_classes)
         shots_per_class = max(1, self.n_shots // n_classes)
+        query_idx = []
         shot_idx = []
-        for j, label in enumerate(labels):
+        for label in labels:
             indices = class_indices[label]
-            for k in range(shots_per_class):
-                idx = (i * shots_per_class + k) % len(indices)
-                shot_idx.append(indices[idx])
-        # Pad in case of remainder
-        while len(shot_idx) < self.n_shots:
-            shot_idx.append(class_indices[labels[0]][i % len(class_indices[labels[0]])])
+            shot_start = i * block_size
+            shot_end = shot_start + shots_per_class
+            query_start = shot_start if self.queries_same_as_shots else shot_end
+            query_end = query_start + queries_per_class
+            shot_idx.extend(indices[shot_start:shot_end])
+            query_idx.extend(indices[query_start:query_end])
 
-        # Queries
-        if self.queries_same_as_shots:
-            query_idx = shot_idx.copy()
-        else:
-            queries_per_class = max(1, self.n_queries // n_classes)
-            query_idx = []
-            for j, label in enumerate(labels):
-                indices = class_indices[label]
-                for k in range(queries_per_class):
-                    idx = (i * queries_per_class + k + 1000) % len(indices)  # offset so queries differ
-                    query_idx.append(indices[idx])
-            while len(query_idx) < self.n_queries:
-                query_idx.append(class_indices[labels[0]][(i + 500) % len(class_indices[labels[0]])])
-
+        # print(f"Dataset: {ds_name}, number of examples: {len(self.datasets[ds_name])}, current end index: {query_idx[-1]}")   
         return (ds_name, shot_idx, query_idx)
 
     def __len__(self):
@@ -170,8 +166,11 @@ class FewShotDataset(Dataset):
 
         # Shots = text+label strings
         shots_df = df.iloc[shot_idx]
+        if self.shuffle:
+            shots_df = shots_df.sample(frac=1).reset_index(drop=True)
         shots_df = handler.apply_permutation(shots_df, permutation)
         prompts = handler.apply_template(shots_df)
+        print(shots_df.to_numpy())
         if self.shots_with_labels:
             shots = "".join([f"Example {i}: {shot[TEXT_COL_NAME]} {shot[TARGET_COL_NAME]}\n\n" for i, shot in prompts.iterrows()])
         else:
@@ -179,6 +178,8 @@ class FewShotDataset(Dataset):
         
         # Queries
         query_df = df.iloc[query_idx]
+        if self.shuffle:
+            query_df = query_df.sample(frac=1).reset_index(drop=True)
         query_df = handler.apply_permutation(query_df, permutation)
         query_df = handler.preprocess(query_df)
         queries_x = query_df.iloc[:, :-1].to_numpy(dtype=np.float32)

@@ -82,7 +82,8 @@ def train(cfg:Config, sweep:bool):
         shuffle=True,
         max_n_features=cfg.datasets.max_n_features() if cfg.datasets.max_n_features() else None,
         queries_same_as_shots=cfg.datasets.queries_same_as_shots(),
-        debug=cfg.debug() or cfg.debug_datasets()
+        debug=cfg.debug() or cfg.debug_datasets(),
+        shots_with_labels={'train': True, 'val': True, 'test': False}
     )
     
     meta_datasets = meta_dataset_builder.get_datasets()

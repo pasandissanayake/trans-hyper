@@ -51,7 +51,7 @@ trainer:
   optimizer:
     name: adam
     args:
-      lr: 1.e-5
+      lr: 5.e-6
     
 # dataset configuration
 datasets:
@@ -63,9 +63,9 @@ datasets:
   train_size: 1
   val_size: 1
   test_size: 1000
-  train_permutation: True
-  val_permutation: True
-  test_permutation: True
+  train_permutation: False
+  val_permutation: False
+  test_permutation: False
   queries_same_as_shots: True
   max_n_features: False
   set_hyponet_indim: True
