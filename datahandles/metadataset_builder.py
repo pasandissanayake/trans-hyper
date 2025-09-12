@@ -170,7 +170,6 @@ class FewShotDataset(Dataset):
             shots_df = shots_df.sample(frac=1).reset_index(drop=True)
         shots_df = handler.apply_permutation(shots_df, permutation)
         prompts = handler.apply_template(shots_df)
-        print(shots_df.to_numpy())
         if self.shots_with_labels:
             shots = "".join([f"Example {i}: {shot[TEXT_COL_NAME]} {shot[TARGET_COL_NAME]}\n\n" for i, shot in prompts.iterrows()])
         else:

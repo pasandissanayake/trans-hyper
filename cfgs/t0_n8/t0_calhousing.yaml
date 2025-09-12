@@ -1,6 +1,6 @@
 # experiment configuration
 name: t0-calhousing
-note: "T0 hypernetwork with 8-shot calhousing dataset, no learning rate schedule"
+note: "T0 hypernetwork with 8-shot calhousing dataset, with learning rate schedule"
 save_dir: './save/'
 eval_model: false # "/export/pasand/trans-hyper/save/t0pp-calhouse-finonly/epoch-10.pth"
 wandb_auth: 'wandb_auth.yaml'
@@ -34,7 +34,7 @@ hyponet:
 tokenizer:
   name: t0_tokenizer
   model: bigscience/T0pp
-  truncation: True
+  truncation: true
   padding: max_length
   max_length: 128
 
@@ -44,7 +44,7 @@ trainer:
   name: t0_trainer
   batch_size: 1
   n_workers: 1
-  max_epoch: 300
+  max_epoch: 200
   eval_epoch: 1
   vis_epoch: 25
   save_epoch: 50
@@ -56,11 +56,11 @@ trainer:
 # dataset configuration
 datasets:
   data_root: ./data/
-  n_shots: 4
-  n_queries: 4
+  n_shots: 8
+  n_queries: 8
   train_ratio: None
   test_ratio: None
-  train_size: 2
+  train_size: 1
   val_size: 1
   test_size: 1000
   train_permutation: true

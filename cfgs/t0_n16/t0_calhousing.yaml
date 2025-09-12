@@ -1,5 +1,6 @@
 # experiment configuration
-name: t0-self-creditrisk
+name: t0-calhousing
+note: "T0 hypernetwork with 8-shot calhousing dataset, with learning rate schedule"
 save_dir: './save/'
 eval_model: false # "/export/pasand/trans-hyper/save/t0pp-calhouse-finonly/epoch-10.pth"
 wandb_auth: 'wandb_auth.yaml'
@@ -23,7 +24,7 @@ hypernet:
 # hyponet configuration
 hyponet:
   model: mlp
-  in_dim: 103
+  in_dim: 0 # to be set from dataset
   out_dim: 2
   hidden_dim: 10
   depth: 4
@@ -33,9 +34,9 @@ hyponet:
 tokenizer:
   name: t0_tokenizer
   model: bigscience/T0pp
-  truncation: True
+  truncation: true
   padding: max_length
-  max_length: 256
+  max_length: 128
 
 
 # trainer configuration
@@ -44,7 +45,7 @@ trainer:
   batch_size: 1
   n_workers: 1
   max_epoch: 200
-  eval_epoch: 5
+  eval_epoch: 1
   vis_epoch: 25
   save_epoch: 50
   optimizer:
@@ -55,35 +56,32 @@ trainer:
 # dataset configuration
 datasets:
   data_root: ./data/
-  n_shots: 8
-  n_queries: 8
+  n_shots: 16
+  n_queries: 16
   train_ratio: None
   test_ratio: None
-  train_size: 8
-  val_size: 20
+  train_size: 1
+  val_size: 1
   test_size: 1000
-  train_permutation: True
-  val_permutation: True
-  test_permutation: True
-  queries_same_as_shots: True
+  train_permutation: true
+  val_permutation: true
+  test_permutation: false
+  queries_same_as_shots: true
+  max_n_features: false
+  set_hyponet_indim: true
 
   balanced:
-    train: True
-    val: False
-    test: False
+    train: true
+    val: true
+    test: false
 
   list_combine_train: # list of datasets to combine
-    - credit_risk
+    - calhousing
         
   list_combine_val: # list of datasets to combine for validation
-    - credit_risk
-
-  list_combine_test: # list of datasets to combine for testing
-    - credit_risk
+    - calhousing
   
-  tabllm:
-    raw_data_path: "tabllm/data/datasets"
-    txt_data_path: "tabllm/data/datasets_serialized"
-    template_dir: "tabllm/templates"
+  list_combine_test: # list of datasets to combine for testing
+    - calhousing
 
 
