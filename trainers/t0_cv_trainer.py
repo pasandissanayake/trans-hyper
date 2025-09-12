@@ -15,7 +15,7 @@ class T0Trainer(BertCVTrainer):
         super().__init__(rank=rank, cfg=cfg, train_ds=train_ds, test_ds=test_ds)
 
     def adjust_learning_rate(self):
-        base_lr = self.cfg.trainer.optimizer.args.lr()
+        base_lr = self.cfg.trainer.optimizer.args.lr
 
         if self.epoch >= 100:
             lr = base_lr * 0.1

@@ -17,9 +17,9 @@ class BertTrainer(BaseTrainer):
     def __init__(self, rank, cfg, train_ds=None, test_ds=None):
         super().__init__(rank=rank, cfg=cfg, train_ds=train_ds, test_ds=test_ds)
         self.name = TRAINER_NAME
-        self.tokenizer = models.make(model_name=self.cfg.tokenizer.name(), cfg=self.cfg, sd=None)
-        self.log(f"Number of shots: {cfg.datasets.n_shots()}")
-        self.log(f"Number of queries: {cfg.datasets.n_queries()}")
+        self.tokenizer = models.make(model_name=self.cfg.tokenizer.name, cfg=self.cfg, sd=None)
+        self.log(f"Number of shots: {cfg.datasets.n_shots}")
+        self.log(f"Number of queries: {cfg.datasets.n_queries}")
 
         self.current_best_eval_acc = 0
         self.current_best_eval_balacc = 0

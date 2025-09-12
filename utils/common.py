@@ -114,7 +114,7 @@ def make_optimizer(params, cfg, sd=None):
     optimizer = {
         'sgd': SGD,
         'adam': Adam
-    }[cfg.trainer.optimizer.name()](params, **cfg.trainer.optimizer.args.to_dict())
+    }[cfg.trainer.optimizer.name](params, **cfg.trainer.optimizer.args.to_dict)
     if sd is not None:
         optimizer.load_state_dict(sd)
     return optimizer

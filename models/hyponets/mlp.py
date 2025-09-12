@@ -13,12 +13,12 @@ class HypoMlp(nn.Module):
         self.name = HYPONET_NAME
         self.cfg = cfg
         self.hyponet_cfg = self.cfg.hyponet
-        self.debug = self.cfg.debug() or self.cfg.debug_hyponet()
+        self.debug = self.cfg.debug or self.cfg.debug_hyponet
 
-        self.depth = self.hyponet_cfg.depth()
-        self.in_dim = self.hyponet_cfg.in_dim()
-        self.out_dim = self.hyponet_cfg.out_dim()
-        self.hidden_dim = self.hyponet_cfg.hidden_dim()
+        self.depth = self.hyponet_cfg.depth
+        self.in_dim = self.hyponet_cfg.in_dim
+        self.out_dim = self.hyponet_cfg.out_dim
+        self.hidden_dim = self.hyponet_cfg.hidden_dim
         
         # create parameter shapes dict()
         self.param_shapes = dict()

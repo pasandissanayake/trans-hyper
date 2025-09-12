@@ -51,20 +51,20 @@ class BaseTrainer(ABC):
         self.rank = rank
         self.cfg = cfg
         self.trainer_cfg = self.cfg.trainer
-        self.debug = self.cfg.debug() or self.cfg.debug_trainer()
+        self.debug = self.cfg.debug or self.cfg.debug_trainer
 
         self.train_ds = train_ds
         self.test_ds = test_ds
 
         self.is_master = (rank == 0)
         
-        self.total_gpus = self.cfg.env.total_gpus()
+        self.total_gpus = self.cfg.env.total_gpus
         self.distributed = (self.total_gpus > 1)
 
         # Setup log, tensorboard, wandb
         if self.is_master:
-            logger, writer = utils.set_save_dir(self.cfg.env.save_dir(), replace=False)
-            with open(osp.join(self.cfg.env.save_dir(), 'cfg.yaml'), 'w') as f:
+            logger, writer = utils.set_save_dir(self.cfg.env.save_dir, replace=False)
+            with open(osp.join(self.cfg.env.save_dir, 'cfg.yaml'), 'w') as f:
                 yaml.dump(cfg, f, sort_keys=False)
 
             self.log = logger.info
@@ -72,7 +72,7 @@ class BaseTrainer(ABC):
             self.enable_tb = True
             self.writer = writer
 
-            if self.cfg.env.wandb_upload():
+            if self.cfg.env.wandb_upload:
                 self.enable_wandb = True
             else:
                 self.enable_wandb = False
@@ -86,20 +86,20 @@ class BaseTrainer(ABC):
         self.device = torch.device('cuda', torch.cuda.current_device())
 
         if self.distributed:
-            dist_url = f"tcp://localhost:{self.cfg.env.port()}"
+            dist_url = f"tcp://localhost:{self.cfg.env.port}"
             dist.init_process_group(backend='nccl', init_method=dist_url,
                                     world_size=self.total_gpus, rank=rank)
             self.log(f'Distributed training enabled.')
 
-        cudnn.benchmark = self.cfg.env.cudnn()
+        cudnn.benchmark = self.cfg.env.cudnn
 
         self.log(f'Environment setup done.')
 
     def run(self):
         self.make_datasets()
 
-        if self.cfg.eval_model():
-            checkpoint = torch.load(self.cfg.eval_model(), weights_only=False)
+        if self:
+            checkpoint = torch.load(self.cfg.eval_model, weights_only=False)
             cfg = utils.Config(cfg_dict=checkpoint['cfg'])
             self.make_model(cfg=cfg, sd=checkpoint['model'])
             self.epoch = 0
@@ -145,7 +145,7 @@ class BaseTrainer(ABC):
 
         if self.train_ds is not None:
             self.train_loader, train_sampler = make_distributed_loader(
-                self.train_ds, self.cfg.trainer.batch_size(), self.cfg.trainer.n_workers(), shuffle=True, drop_last=True)
+                self.train_ds, self.cfg.trainer.batch_size, self.cfg.trainer.n_workers, shuffle=True, drop_last=True)
             self.dist_samplers.append(train_sampler)
             self.log(f"Train dataset size: {len(self.train_ds)}")
             
@@ -155,7 +155,7 @@ class BaseTrainer(ABC):
         
         if self.test_ds is not None:
             self.test_loader, test_sampler = make_distributed_loader(
-                self.test_ds, self.cfg.trainer.batch_size(), self.cfg.trainer.n_workers(), shuffle=False, drop_last=False)
+                self.test_ds, self.cfg.trainer.batch_size, self.cfg.trainer.n_workers, shuffle=False, drop_last=False)
             self.dist_samplers.append(test_sampler)
             self.log(f"Test dataset size: {len(self.test_ds)}")
 
@@ -163,7 +163,7 @@ class BaseTrainer(ABC):
     def make_model(self, cfg=None, sd=None):
         if cfg is None:
             cfg = self.cfg
-        model = models.make(model_name=cfg.hypernet.name(), cfg=cfg, sd=sd)
+        model = models.make(model_name=cfg.hypernet.name, cfg=cfg, sd=sd)
         self.log(f'Model: #params={utils.compute_num_params(model)}, #trainable-params={utils.compute_num_params(model, trainable_only=True)}')
 
         if self.distributed:
@@ -185,10 +185,10 @@ class BaseTrainer(ABC):
 
         self.optimizer = utils.make_optimizer(self.model_ddp.parameters(), cfg)
 
-        max_epoch = cfg.trainer.max_epoch()
-        eval_epoch = cfg.trainer.eval_epoch()
-        vis_epoch = cfg.trainer.vis_epoch()
-        save_epoch = cfg.trainer.save_epoch()
+        max_epoch = cfg.trainer.max_epoch
+        eval_epoch = cfg.trainer.eval_epoch
+        vis_epoch = cfg.trainer.vis_epoch
+        save_epoch = cfg.trainer.save_epoch
         epoch_timer = utils.EpochTimer(max_epoch)
 
         for epoch in range(1, max_epoch + 1):
@@ -220,7 +220,7 @@ class BaseTrainer(ABC):
             self.log(', '.join(self.log_buffer))
 
     def adjust_learning_rate(self):
-        base_lr = self.cfg.trainer.optimizer.args.lr()
+        base_lr = self.cfg.trainer.optimizer.args.lr
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = base_lr
         self.log_temp_scalar('lr', self.optimizer.param_groups[0]['lr'])
@@ -333,6 +333,6 @@ class BaseTrainer(ABC):
             'model': model_state,
             'optimizer': optimizer_state,
             'epoch': self.epoch,
-            'cfg': self.cfg.to_dict(),
+            'cfg': self.cfg.to_dict,
         }
-        torch.save(checkpoint, osp.join(self.cfg.env.save_dir(), filename))
+        torch.save(checkpoint, osp.join(self.cfg.env.save_dir, filename))

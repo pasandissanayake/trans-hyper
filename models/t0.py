@@ -15,9 +15,9 @@ class T0RegressionModel(nn.Module):
         self.name = HYPERNET_NAME
         self.cfg = cfg
         self.hypernet_cfg = self.cfg.hypernet
-        self.debug = self.cfg.debug_hypernet() or self.cfg.debug()
+        self.debug = self.cfg.debug_hypernet or self.cfg.debug
         
-        self.model = AutoModelForSeq2SeqLM.from_pretrained(self.hypernet_cfg.model())
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(self.hypernet_cfg.model)
         self.encoder = self.model.encoder
         
         # fine-tune only a part of the model
@@ -33,7 +33,7 @@ class T0RegressionModel(nn.Module):
             else:
                 param.requires_grad = False
 
-        self.hyponet = make(model_name=self.cfg.hyponet.model(), cfg=self.cfg, sd=None)
+        self.hyponet = make(model_name=self.cfg.hyponet.model, cfg=self.cfg, sd=None)
                
         total_params = 0
         for name, shape in self.hyponet.param_shapes.items():
@@ -45,7 +45,7 @@ class T0RegressionModel(nn.Module):
         )
 
         if self.debug:
-            print(f"Initializing hypernet {self.name}, name: {self.hypernet_cfg.name()}, model: {self.hypernet_cfg.model()}")
+            print(f"Initializing hypernet {self.name}, name: {self.hypernet_cfg.name}, model: {self.hypernet_cfg.model}")
             print(f"{self.name} hypernet hidden size: {self.model.config.d_model}")
             print(f"total hyponet params: {total_params}")
             

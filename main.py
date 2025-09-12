@@ -56,33 +56,33 @@ def adopt_wandb_cfg(cfg, wandb_cfg):
     return cfg
 
 def train(cfg:Config, sweep:bool):
-    if cfg.env.wandb_upload():
+    if cfg.env.wandb_upload:
         wandb_name = os.environ["WANDB_NAME"]
         timestamp = datetime.now().strftime("%y%m%d%H%M")
-        wandb.init(name=f"{wandb_name}-{timestamp}", group=cfg.env.exp_group())
+        wandb.init(name=f"{wandb_name}-{timestamp}", group=cfg.env.exp_group)
     if sweep:
         cfg = adopt_wandb_cfg(cfg, wandb.config)
 
     meta_dataset_builder = MetaDatasetBuilder(
-        data_root=cfg.datasets.data_root(),
-        train_datasets=cfg.datasets.list_combine_train(),
-        val_datasets=cfg.datasets.list_combine_val(),
-        test_datasets=cfg.datasets.list_combine_test(),
-        train_size=cfg.datasets.train_size(),
-        val_size=cfg.datasets.val_size(),
-        test_size=cfg.datasets.test_size(),
-        train_permutation=cfg.datasets.train_permutation(),
-        val_permutation=cfg.datasets.val_permutation(),
-        test_permutation=cfg.datasets.test_permutation(),
-        train_balance=cfg.datasets.balanced.train(),
-        val_balance=cfg.datasets.balanced.val(),
-        test_balance=cfg.datasets.balanced.test(),
-        n_shots=cfg.datasets.n_shots(),
-        n_queries=cfg.datasets.n_queries(),
+        data_root=cfg.datasets.data_root,
+        train_datasets=cfg.datasets.list_combine_train,
+        val_datasets=cfg.datasets.list_combine_val,
+        test_datasets=cfg.datasets.list_combine_test,
+        train_size=cfg.datasets.train_size,
+        val_size=cfg.datasets.val_size,
+        test_size=cfg.datasets.test_size,
+        train_permutation=cfg.datasets.train_permutation,
+        val_permutation=cfg.datasets.val_permutation,
+        test_permutation=cfg.datasets.test_permutation,
+        train_balance=cfg.datasets.balanced.train,
+        val_balance=cfg.datasets.balanced.val,
+        test_balance=cfg.datasets.balanced.test,
+        n_shots=cfg.datasets.n_shots,
+        n_queries=cfg.datasets.n_queries,
         shuffle=True,
-        max_n_features=cfg.datasets.max_n_features() if cfg.datasets.max_n_features() else None,
-        queries_same_as_shots=cfg.datasets.queries_same_as_shots(),
-        debug=cfg.debug() or cfg.debug_datasets(),
+        max_n_features=cfg.datasets.max_n_features if cfg.datasets.max_n_features else None,
+        queries_same_as_shots=cfg.datasets.queries_same_as_shots,
+        debug=cfg.debug or cfg.debug_datasets,
         shots_with_labels={'train': True, 'val': True, 'test': False}
     )
     
@@ -92,10 +92,10 @@ def train(cfg:Config, sweep:bool):
     test_ds = meta_datasets['train']
 
     # set the hyponet input dimension from dataset
-    if cfg.datasets.set_hyponet_indim():
+    if cfg.datasets.set_hyponet_indim:
         cfg.hyponet.in_dim(meta_dataset_builder.max_n_features) 
 
-    trainer = trainers[cfg.trainer.name()](0, cfg, train_ds, test_ds) # type: ignore
+    trainer = trainers[cfg.trainer.name](0, cfg, train_ds, test_ds) # type: ignore
     trainer.run()
 
 def main():
@@ -103,17 +103,17 @@ def main():
     args = parse_args()
     cfg = make_cfg(args)
 
-    if cfg.debug(): print('UNIVERSAL DEBUG MODE ENABLED') # type: ignore
+    if cfg.debug: print('UNIVERSAL DEBUG MODE ENABLED') # type: ignore
 
-    if cfg.env.wandb_upload():
-        with open(cfg.wandb_auth(), 'r') as f:
+    if cfg.env.wandb_upload:
+        with open(cfg.wandb_auth, 'r') as f:
             wandb_auth = yaml.load(f, Loader=yaml.FullLoader)
-        os.environ['WANDB_DIR'] = cfg.env.save_dir()
-        os.environ['WANDB_NAME'] = cfg.env.exp_name()
+        os.environ['WANDB_DIR'] = cfg.env.save_dir
+        os.environ['WANDB_NAME'] = cfg.env.exp_name
         os.environ['WANDB_API_KEY'] = wandb_auth['api_key']
 
-        if cfg.wandb_sweep_cfg():
-            with open(cfg.wandb_sweep_cfg(), 'r') as f:
+        if cfg.wandb_sweep_cfg:
+            with open(cfg.wandb_sweep_cfg, 'r') as f:
                 sweep_cfg = yaml.load(f, Loader=yaml.FullLoader)
             sweep_id = wandb.sweep(sweep_cfg, project=wandb_auth['project'])
             def train_wrapper():

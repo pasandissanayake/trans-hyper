@@ -77,8 +77,8 @@ class BaseCVTrainer(BaseTrainer):
 
             train_loader, train_sampler = make_distributed_loader(
                 fold['train'],
-                self.cfg.trainer.batch_size(),
-                self.cfg.trainer.n_workers(),
+                self.cfg.trainer.batch_size,
+                self.cfg.trainer.n_workers,
                 shuffle=True,
                 drop_last=True
             )
@@ -88,8 +88,8 @@ class BaseCVTrainer(BaseTrainer):
 
             val_loader, val_sampler = make_distributed_loader(
                 fold['val'],
-                self.cfg.trainer.batch_size(),
-                self.cfg.trainer.n_workers(),
+                self.cfg.trainer.batch_size,
+                self.cfg.trainer.n_workers,
                 shuffle=False,
                 drop_last=False
             )
@@ -156,10 +156,10 @@ class BaseCVTrainer(BaseTrainer):
 
         self.optimizer = utils.make_optimizer(self.model_ddp.parameters(), cfg)
 
-        max_epoch = cfg.trainer.max_epoch()
-        eval_epoch = cfg.trainer.eval_epoch()
-        vis_epoch = cfg.trainer.vis_epoch()
-        save_epoch = cfg.trainer.save_epoch()
+        max_epoch = cfg.trainer.max_epoch
+        eval_epoch = cfg.trainer.eval_epoch
+        vis_epoch = cfg.trainer.vis_epoch
+        save_epoch = cfg.trainer.save_epoch
         epoch_timer = utils.EpochTimer(max_epoch)
 
         for epoch in range(1, max_epoch + 1):
@@ -199,7 +199,7 @@ class BaseCVTrainer(BaseTrainer):
             wandb.log({f'fold_{self.current_fold}/{k}': v, 'fold_step': self.epoch})
 
     def adjust_learning_rate(self):
-        base_lr = self.cfg.trainer.optimizer.args.lr()
+        base_lr = self.cfg.trainer.optimizer.args.lr
         for param_group in self.optimizer.param_groups:
             param_group['lr'] = base_lr
         self.log_temp_scalar(f'lr', self.optimizer.param_groups[0]['lr'])

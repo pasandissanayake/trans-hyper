@@ -56,36 +56,36 @@ def adopt_wandb_cfg(cfg, wandb_cfg):
     return cfg
 
 def train(cfg:Config, sweep:bool):
-    if cfg.env.wandb_upload():
+    if cfg.env.wandb_upload:
         wandb_name = os.environ["WANDB_NAME"]
         timestamp = datetime.now().strftime("%y%m%d%H%M")
-        wandb.init(name=f"{wandb_name}-{timestamp}", group=cfg.env.exp_group())
+        wandb.init(name=f"{wandb_name}-{timestamp}", group=cfg.env.exp_group)
     if sweep:
         cfg = adopt_wandb_cfg(cfg, wandb.config)
 
-    col_permutations = {"train": cfg.dataset.col_permutations.train(),
-                        "val": cfg.dataset.col_permutations.val(),
-                        "test": cfg.dataset.col_permutations.test()}
-    balanced = {"train": cfg.dataset.balanced.train(),
-                "val": cfg.dataset.balanced.val(),
-                "test": cfg.dataset.balanced.test()}
-    kfold_datasets = KFoldDatasetBuilder(dataset_name=cfg.dataset.name(),
-                                         data_root=cfg.dataset.data_root(),
+    col_permutations = {"train": cfg.dataset.col_permutations.train,
+                        "val": cfg.dataset.col_permutations.val,
+                        "test": cfg.dataset.col_permutations.test}
+    balanced = {"train": cfg.dataset.balanced.train,
+                "val": cfg.dataset.balanced.val,
+                "test": cfg.dataset.balanced.test}
+    kfold_datasets = KFoldDatasetBuilder(dataset_name=cfg.dataset.name,
+                                         data_root=cfg.dataset.data_root,
                                          col_permutations=col_permutations,
-                                         train_size=cfg.dataset.train_size(),
-                                         n_folds=cfg.dataset.n_folds(),
-                                         n_shots=cfg.dataset.n_shots(),
-                                         max_n_features=cfg.dataset.max_n_features(),
+                                         train_size=cfg.dataset.train_size,
+                                         n_folds=cfg.dataset.n_folds,
+                                         n_shots=cfg.dataset.n_shots,
+                                         max_n_features=cfg.dataset.max_n_features,
                                          balanced=balanced,
-                                         overlap_shots_queries=cfg.dataset.overlap_shots_queries(),
-                                         eval_shots_from_train=cfg.dataset.eval_shots_from_train(),
-                                         eval_shots_with_labels=cfg.dataset.eval_shots_with_labels(),
+                                         overlap_shots_queries=cfg.dataset.overlap_shots_queries,
+                                         eval_shots_from_train=cfg.dataset.eval_shots_from_train,
+                                         eval_shots_with_labels=cfg.dataset.eval_shots_with_labels,
                                         ).get_datasets()
     
     train_ds = kfold_datasets['train']
     test_ds = None
 
-    trainer = trainers[cfg.trainer.name()](0, cfg, train_ds, test_ds) # type: ignore
+    trainer = trainers[cfg.trainer.name](0, cfg, train_ds, test_ds) # type: ignore
     
     trainer.run()
 
@@ -94,17 +94,17 @@ def main():
     args = parse_args()
     cfg = make_cfg(args)
 
-    if cfg.debug(): print('UNIVERSAL DEBUG MODE ENABLED') # type: ignore
+    if cfg.debug: print('UNIVERSAL DEBUG MODE ENABLED') # type: ignore
 
-    if cfg.env.wandb_upload():
-        with open(cfg.wandb_auth(), 'r') as f:
+    if cfg.env.wandb_upload:
+        with open(cfg.wandb_auth, 'r') as f:
             wandb_auth = yaml.load(f, Loader=yaml.FullLoader)
-        os.environ['WANDB_DIR'] = cfg.env.save_dir()
-        os.environ['WANDB_NAME'] = cfg.env.exp_name()
+        os.environ['WANDB_DIR'] = cfg.env.save_dir
+        os.environ['WANDB_NAME'] = cfg.env.exp_name
         os.environ['WANDB_API_KEY'] = wandb_auth['api_key']
 
-        if cfg.wandb_sweep_cfg():
-            with open(cfg.wandb_sweep_cfg(), 'r') as f:
+        if cfg.wandb_sweep_cfg:
+            with open(cfg.wandb_sweep_cfg, 'r') as f:
                 sweep_cfg = yaml.load(f, Loader=yaml.FullLoader)
             sweep_id = wandb.sweep(sweep_cfg, project=wandb_auth['project'])
             def train_wrapper():

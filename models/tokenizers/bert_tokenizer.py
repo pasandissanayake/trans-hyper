@@ -10,12 +10,12 @@ class TokenizerForBert():
         self.name = TOKENIZER_NAME
         self.cfg = cfg
         self.tokenizer_cfg = self.cfg.tokenizer
-        self.tokenizer = BertTokenizer.from_pretrained(self.cfg.hypernet.model())
+        self.tokenizer = BertTokenizer.from_pretrained(self.cfg.hypernet.model)
 
     def __call__(self, *args: Any, **kwds: Any) -> Any:
         return self.tokenizer(*args, 
-                               truncation=self.tokenizer_cfg.truncation(),
-                               padding=self.tokenizer_cfg.padding(),
-                               max_length=self.tokenizer_cfg.max_length(),
+                               truncation=self.tokenizer_cfg.truncation,
+                               padding=self.tokenizer_cfg.padding,
+                               max_length=self.tokenizer_cfg.max_length,
                                return_tensors='pt'                 
                              )
