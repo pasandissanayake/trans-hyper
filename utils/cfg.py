@@ -1,5 +1,6 @@
 import yaml
 import os
+from munch import Munch, munchify
 
 class ConfigObject:
     def __init__(self, val=None) -> None:
