@@ -98,7 +98,7 @@ class BaseTrainer(ABC):
     def run(self):
         self.make_datasets()
 
-        if self:
+        if self.cfg.eval_model:
             checkpoint = torch.load(self.cfg.eval_model, weights_only=False)
             cfg = utils.load_cfg(cfg_dict=checkpoint['cfg'])
             self.make_model(cfg=cfg, sd=checkpoint['model'])
@@ -333,6 +333,6 @@ class BaseTrainer(ABC):
             'model': model_state,
             'optimizer': optimizer_state,
             'epoch': self.epoch,
-            'cfg': self.cfg.to_dict,
+            'cfg': self.cfg,
         }
         torch.save(checkpoint, osp.join(self.cfg.env.save_dir, filename))

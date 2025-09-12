@@ -51,9 +51,9 @@ def make_cfg(args):
     return cfg
 
 def adopt_wandb_cfg(cfg, wandb_cfg):
-    # cfg.trainer.optimizer.args.lr(wandb_cfg.learning_rate)
-    # cfg.trainer.batch_size(wandb_cfg.batch_size)
-    # cfg.datasets.n_shots(wandb_cfg.n_shots)
+    # cfg.trainer.optimizer.args.lr = wandb_cfg.learning_rate
+    # cfg.trainer.batch_size = wandb_cfg.batch_size
+    # cfg.datasets.n_shots = wandb_cfg.n_shots
     return cfg
 
 def train(cfg:Munch, sweep:bool):

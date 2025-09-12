@@ -51,9 +51,9 @@ def make_cfg(args):
     return cfg
 
 def adopt_wandb_cfg(cfg, wandb_cfg):
-    # cfg.trainer.optimizer.args.lr(wandb_cfg.learning_rate)
-    # cfg.trainer.batch_size(wandb_cfg.batch_size)
-    # cfg.datasets.n_shots(wandb_cfg.n_shots)
+    # cfg.trainer.optimizer.args.lr = wandb_cfg.learning_rate
+    # cfg.trainer.batch_size = wandb_cfg.batch_size
+    # cfg.datasets.n_shots = wandb_cfg.n_shots
     return cfg
 
 def train(cfg:Munch, sweep:bool):
@@ -94,7 +94,7 @@ def train(cfg:Munch, sweep:bool):
 
     # set the hyponet input dimension from dataset
     if cfg.datasets.set_hyponet_indim:
-        cfg.hyponet.in_dim(meta_dataset_builder.max_n_features) 
+        cfg.hyponet.in_dim = meta_dataset_builder.max_n_features
 
     trainer = trainers[cfg.trainer.name](0, cfg, train_ds, test_ds) # type: ignore
     trainer.run()
