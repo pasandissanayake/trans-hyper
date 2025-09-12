@@ -1,2 +1,2 @@
-from .cfg import make_cfg
+from .cfg import load_cfg
 from .common import *

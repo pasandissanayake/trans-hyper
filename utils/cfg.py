@@ -3,7 +3,7 @@ import os
 from munch import Munch, munchify
 
 
-def make_cfg(cfg_file=None, cfg_dict=None) -> Munch:
+def load_cfg(cfg_file=None, cfg_dict=None) -> Munch:
     cfg = Munch()
     if cfg_file is not None:
         with open(cfg_file, 'r') as f:

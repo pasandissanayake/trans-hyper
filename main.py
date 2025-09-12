@@ -6,7 +6,8 @@ import wandb
 from datetime import datetime
 
 from datahandles import MetaDatasetBuilder
-from utils import Config, ConfigObject
+from utils import load_cfg
+from munch import Munch
 from trainers import trainers
 
 
@@ -28,7 +29,7 @@ def parse_args():
 
 
 def make_cfg(args):
-    cfg = Config(args.cfg)
+    cfg = load_cfg(args.cfg)
 
     if args.name is None:
             exp_name = os.path.basename(args.cfg).split('.')[0]
@@ -38,14 +39,14 @@ def make_cfg(args):
     if args.tag is not None:
         exp_name += '_' + args.tag
 
-    setattr(cfg, "env", ConfigObject())
-    setattr(cfg.env, "exp_name", ConfigObject(exp_name)) # type: ignore
-    setattr(cfg.env, "exp_group", ConfigObject(args.group)) # type: ignore
-    setattr(cfg.env, "total_gpus", ConfigObject(torch.cuda.device_count())) # type: ignore
-    setattr(cfg.env, "save_dir", ConfigObject(os.path.join(args.save_root, exp_name))) # type: ignore
-    setattr(cfg.env, "wandb_upload", ConfigObject(args.wandb_upload)) # type: ignore
-    setattr(cfg.env, "port", ConfigObject(str(29600 + args.port_offset))) # type: ignore
-    setattr(cfg.env, "cudnn", ConfigObject(args.cudnn)) # type: ignore
+    cfg.env = Munch()
+    cfg.env.exp_name = exp_name
+    cfg.env.exp_group = args.group
+    cfg.env.total_gpus = torch.cuda.device_count()
+    cfg.env.save_dir = os.path.join(args.save_root, exp_name)
+    cfg.env.wandb_upload = args.wandb_upload
+    cfg.env.port = str(29600 + args.port_offset)
+    cfg.env.cudnn = args.cudnn
    
     return cfg
 
@@ -55,7 +56,7 @@ def adopt_wandb_cfg(cfg, wandb_cfg):
     # cfg.datasets.n_shots(wandb_cfg.n_shots)
     return cfg
 
-def train(cfg:Config, sweep:bool):
+def train(cfg:Munch, sweep:bool):
     if cfg.env.wandb_upload:
         wandb_name = os.environ["WANDB_NAME"]
         timestamp = datetime.now().strftime("%y%m%d%H%M")
