@@ -1,6 +1,6 @@
 # experiment configuration
-name: t0-income
-note: "T0 hypernetwork with 8-shot income dataset, with learning rate schedule"
+name: tabpfn-bank
+note: "TabPFN hypernetwork with 32-shot bank dataset, without learning rate schedule"
 save_dir: './save/'
 eval_model: false # "/export/pasand/trans-hyper/save/t0pp-calhouse-finonly/epoch-10.pth"
 wandb_auth: 'wandb_auth.yaml'
@@ -17,8 +17,7 @@ debug_trainer: false
 
 # hypernet configuration
 hypernet:
-  name: t0
-  model: bigscience/T0pp
+  name: tabpfn
 
 
 # hyponet configuration
@@ -30,18 +29,9 @@ hyponet:
   depth: 4
 
 
-# tokenizer configuration
-tokenizer:
-  name: t0_tokenizer
-  model: bigscience/T0pp
-  truncation: true
-  padding: max_length
-  max_length: 128
-
-
 # trainer configuration
 trainer:
-  name: t0_trainer
+  name: tabpfn_trainer
   batch_size: 1
   n_workers: 1
   max_epoch: 300
@@ -51,16 +41,14 @@ trainer:
   optimizer:
     name: adam
     args:
-      lr: 1.e-5
-    lr_schedule:
-      150: 0.5
-      250: 0.25
+      lr: 1.e-4
+
     
 # dataset configuration
 datasets:
   data_root: ./data/
-  n_shots: 8
-  n_queries: 8
+  n_shots: 32
+  n_queries: 32
   train_ratio: None
   test_ratio: None
   train_size: 1
@@ -79,12 +67,12 @@ datasets:
     test: false
 
   list_combine_train: # list of datasets to combine
-    - income
+    - bank
         
   list_combine_val: # list of datasets to combine for validation
-    - income
+    - bank
   
   list_combine_test: # list of datasets to combine for testing
-    - income
+    - bank
 
 

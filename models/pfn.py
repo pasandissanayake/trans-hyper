@@ -31,7 +31,7 @@ class TabPFNModel(nn.Module):
             total_params += shape[0] * shape[1]
         
         self.regressor = nn.Sequential(
-            nn.Linear(1536, total_params),
+            nn.Linear(192 * self.cfg.datasets.n_queries, total_params),
             nn.LayerNorm(normalized_shape=total_params)
         )
 
