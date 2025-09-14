@@ -58,6 +58,9 @@ class FewShotDataset(Dataset):
                     df = df[::-1].reset_index(drop=True) # reverse the order, so that validation examples are chosen from the bottom of the dataframe
             else:
                 raise ValueError(f"Split should be one of train, val or test. Received {self.split}")
+            
+            if self.shuffle:
+                df = df.sample(frac=1).reset_index(drop=True)
                 
             self.datasets[name] = df
             self.handlers[name] = handler
@@ -166,8 +169,6 @@ class FewShotDataset(Dataset):
 
         # Shots = text+label strings
         shots_df = df.iloc[shot_idx]
-        if self.shuffle:
-            shots_df = shots_df.sample(frac=1).reset_index(drop=True)
         shots_df = handler.apply_permutation(shots_df, permutation)
         prompts = handler.apply_template(shots_df)
         if self.shots_with_labels:
@@ -177,8 +178,6 @@ class FewShotDataset(Dataset):
         
         # Queries
         query_df = df.iloc[query_idx]
-        if self.shuffle:
-            query_df = query_df.sample(frac=1).reset_index(drop=True)
         query_df = handler.apply_permutation(query_df, permutation)
         query_df = handler.preprocess(query_df)
         queries_x = query_df.iloc[:, :-1].to_numpy(dtype=np.float32)
