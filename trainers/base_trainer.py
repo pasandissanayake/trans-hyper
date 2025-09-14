@@ -221,8 +221,16 @@ class BaseTrainer(ABC):
 
     def adjust_learning_rate(self):
         base_lr = self.cfg.trainer.optimizer.args.lr
+        lr = base_lr
+        
+        if "lr_schedule" in self.cfg.trainer.optimizer.keys():
+            lr_schedule = self.cfg.trainer.optimizer.lr_schedule
+            for key, val in lr_schedule.items():
+                if self.epoch >= key:
+                    lr = base_lr * val
+
         for param_group in self.optimizer.param_groups:
-            param_group['lr'] = base_lr
+            param_group['lr'] = lr
         self.log_temp_scalar('lr', self.optimizer.param_groups[0]['lr'])
 
     def log_temp_scalar(self, k, v, t=None):

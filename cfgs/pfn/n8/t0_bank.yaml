@@ -17,8 +17,7 @@ debug_trainer: false
 
 # hypernet configuration
 hypernet:
-  name: t0
-  model: bigscience/T0pp
+  name: tabpfn
 
 
 # hyponet configuration
@@ -28,15 +27,6 @@ hyponet:
   out_dim: 2
   hidden_dim: 10
   depth: 4
-
-
-# tokenizer configuration
-tokenizer:
-  name: t0_tokenizer
-  model: bigscience/T0pp
-  truncation: true
-  padding: max_length
-  max_length: 128
 
 
 # trainer configuration
@@ -51,7 +41,7 @@ trainer:
   optimizer:
     name: adam
     args:
-      lr: 1.e-5
+      lr: 1.e-4
     lr_schedule:
       150: 0.5
       250: 0.25
@@ -59,8 +49,8 @@ trainer:
 # dataset configuration
 datasets:
   data_root: ./data/
-  n_shots: 64
-  n_queries: 64
+  n_shots: 8
+  n_queries: 8
   train_ratio: None
   test_ratio: None
   train_size: 1

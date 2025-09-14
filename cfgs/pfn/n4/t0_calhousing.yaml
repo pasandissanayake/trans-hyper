@@ -1,6 +1,6 @@
 # experiment configuration
-name: t0-bank
-note: "T0 hypernetwork with 8-shot bank dataset, with learning rate schedule"
+name: t0-calhousing
+note: "T0 hypernetwork with 8-shot calhousing dataset, with learning rate schedule"
 save_dir: './save/'
 eval_model: false # "/export/pasand/trans-hyper/save/t0pp-calhouse-finonly/epoch-10.pth"
 wandb_auth: 'wandb_auth.yaml'
@@ -59,8 +59,8 @@ trainer:
 # dataset configuration
 datasets:
   data_root: ./data/
-  n_shots: 64
-  n_queries: 64
+  n_shots: 4
+  n_queries: 4
   train_ratio: None
   test_ratio: None
   train_size: 1
@@ -79,12 +79,12 @@ datasets:
     test: false
 
   list_combine_train: # list of datasets to combine
-    - bank
+    - calhousing
         
   list_combine_val: # list of datasets to combine for validation
-    - bank
+    - calhousing
   
   list_combine_test: # list of datasets to combine for testing
-    - bank
+    - calhousing
 
 

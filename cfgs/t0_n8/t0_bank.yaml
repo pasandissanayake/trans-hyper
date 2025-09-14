@@ -44,14 +44,17 @@ trainer:
   name: t0_trainer
   batch_size: 1
   n_workers: 1
-  max_epoch: 200
+  max_epoch: 300
   eval_epoch: 1
   vis_epoch: 25
-  save_epoch: 50
+  save_epoch: 500
   optimizer:
     name: adam
     args:
       lr: 1.e-5
+    lr_schedule:
+      150: 0.5
+      250: 0.25
     
 # dataset configuration
 datasets:
@@ -62,7 +65,7 @@ datasets:
   test_ratio: None
   train_size: 1
   val_size: 1
-  test_size: 1000
+  test_size: 1
   train_permutation: true
   val_permutation: true
   test_permutation: false

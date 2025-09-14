@@ -13,19 +13,3 @@ class T0Trainer(BertTrainer):
 
     def __init__(self, rank, cfg, train_ds=None, test_ds=None):
         super().__init__(rank=rank, cfg=cfg, train_ds=train_ds, test_ds=test_ds)
-
-    def adjust_learning_rate(self):
-        base_lr = self.cfg.trainer.optimizer.args.lr
-
-        # with schedule
-        if self.epoch >= 100:
-            lr = base_lr * 0.5
-        else:
-            lr = base_lr
-        
-        # # no schedule
-        # lr = base_lr
-            
-        for param_group in self.optimizer.param_groups:
-            param_group['lr'] = lr
-        self.log_temp_scalar('lr', self.optimizer.param_groups[0]['lr'])
