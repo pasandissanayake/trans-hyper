@@ -1,4 +1,3 @@
-# experiment configuration
 name: tabpfn-calhousing
 note: "TabPFN hypernetwork with 8-shot calhousing dataset, without learning rate schedule"
 save_dir: './save/'

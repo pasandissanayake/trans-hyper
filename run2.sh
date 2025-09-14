@@ -1,4 +1,5 @@
-python main.py --name "t0pp-income-n8" --cfg "cfgs/t0_n8/t0_income.yaml" --group "t0pp-n8" -w
-python main.py --name "t0pp-income-n16" --cfg "cfgs/t0_n16/t0_income.yaml" --group "t0pp-n16" -w
-python main.py --name "t0pp-income-n32" --cfg "cfgs/t0_n32/t0_income.yaml" --group "t0pp-n32" -w
-python main.py --name "t0pp-income-n64" --cfg "cfgs/t0_n64/t0_income.yaml" --group "t0pp-n64" -w
+python main.py --name "tabpfn-income-n04" --cfg "cfgs/pfn/n04/income.yaml" --group "tabpfn-n04" -w
+python main.py --name "tabpfn-income-n08" --cfg "cfgs/pfn/n08/income.yaml" --group "tabpfn-n08" -w
+python main.py --name "tabpfn-income-n16" --cfg "cfgs/pfn/n16/income.yaml" --group "tabpfn-n16" -w
+python main.py --name "tabpfn-income-n32" --cfg "cfgs/pfn/n32/income.yaml" --group "tabpfn-n32" -w
+python main.py --name "tabpfn-income-n64" --cfg "cfgs/pfn/n64/income.yaml" --group "tabpfn-n64" -w

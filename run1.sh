@@ -1,4 +1,5 @@
-python main.py --name "t0pp-calhousing-n8" --cfg "cfgs/t0_n8/t0_calhousing.yaml" --group "t0pp-n8" -w
-python main.py --name "t0pp-calhousing-n16" --cfg "cfgs/t0_n16/t0_calhousing.yaml" --group "t0pp-n16" -w
-python main.py --name "t0pp-calhousing-n32" --cfg "cfgs/t0_n32/t0_calhousing.yaml" --group "t0pp-n32" -w
-python main.py --name "t0pp-calhousing-n64" --cfg "cfgs/t0_n64/t0_calhousing.yaml" --group "t0pp-n64" -w
+python main.py --name "tabpfn-calhousing-n04" --cfg "cfgs/pfn/n04/calhousing.yaml" --group "tabpfn-n04" -w
+python main.py --name "tabpfn-calhousing-n08" --cfg "cfgs/pfn/n08/calhousing.yaml" --group "tabpfn-n08" -w
+python main.py --name "tabpfn-calhousing-n16" --cfg "cfgs/pfn/n16/calhousing.yaml" --group "tabpfn-n16" -w
+python main.py --name "tabpfn-calhousing-n32" --cfg "cfgs/pfn/n32/calhousing.yaml" --group "tabpfn-n32" -w
+python main.py --name "tabpfn-calhousing-n64" --cfg "cfgs/pfn/n64/calhousing.yaml" --group "tabpfn-n64" -w

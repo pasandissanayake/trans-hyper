@@ -1,3 +1,4 @@
+# experiment configuration
 name: tabpfn-income
 note: "TabPFN hypernetwork with 8-shot income dataset, without learning rate schedule"
 save_dir: './save/'
