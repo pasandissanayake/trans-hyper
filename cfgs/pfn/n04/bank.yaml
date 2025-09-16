@@ -1,35 +1,22 @@
-# experiment configuration
 name: tabpfn-bank
-note: "TabPFN hypernetwork with 4-shot bank dataset, without learning rate schedule"
-save_dir: './save/'
-eval_model: false # "/export/pasand/trans-hyper/save/t0pp-calhouse-finonly/epoch-10.pth"
-wandb_auth: 'wandb_auth.yaml'
-wandb_sweep_cfg: false # 'cfgs/sweeps/sweeptest.yaml'
-
-
-# debugging configuration
+note: TabPFN hypernetwork with 4-shot bank dataset, without learning rate schedule
+save_dir: ./save/
+eval_model: false
+wandb_auth: wandb_auth.yaml
+wandb_sweep_cfg: false
 debug: true
 debug_datasets: false
 debug_hypernet: false
 debug_hyponet: false
 debug_trainer: false
-
-
-# hypernet configuration
 hypernet:
   name: tabpfn
-
-
-# hyponet configuration
 hyponet:
   model: mlp
-  in_dim: 0 # to be set from dataset
+  in_dim: 0
   out_dim: 2
   hidden_dim: 10
-  depth: 4
-
-
-# trainer configuration
+  depth: 10
 trainer:
   name: tabpfn_trainer
   batch_size: 1
@@ -41,10 +28,7 @@ trainer:
   optimizer:
     name: adam
     args:
-      lr: 1.e-4
-
-    
-# dataset configuration
+      lr: 0.0002
 datasets:
   data_root: ./data/
   n_shots: 4
@@ -60,19 +44,14 @@ datasets:
   queries_same_as_shots: true
   max_n_features: false
   set_hyponet_indim: true
-
   balanced:
     train: true
     val: true
     test: false
-
-  list_combine_train: # list of datasets to combine
-    - bank
-        
-  list_combine_val: # list of datasets to combine for validation
-    - bank
-  
-  list_combine_test: # list of datasets to combine for testing
-    - bank
-
-
+  list_combine_train:
+  - bank
+  list_combine_val:
+  - bank
+  list_combine_test:
+  - bank
+random_state: 26

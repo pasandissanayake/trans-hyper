@@ -1,9 +1,9 @@
-name: tabpfn-income
-note: TabPFN hypernetwork with 32-shot income dataset, without learning rate schedule
-save_dir: ./save/
+name: tabpfn-calhousing
+note: TabPFN hypernetwork with 64-shot calhousing dataset, with weight decay
+save_dir: ./save/hpo-calhousing
 eval_model: false
 wandb_auth: wandb_auth.yaml
-wandb_sweep_cfg: cfgs/sweeps/sweeptest.yaml
+wandb_sweep_cfg: cfgs/pfn/hpo-calhousing/sweeptest.yaml
 debug: true
 debug_datasets: false
 debug_hypernet: false
@@ -29,10 +29,11 @@ trainer:
     name: adam
     args:
       lr: 0.0001
+      weight_decay: 0.0001
 datasets:
   data_root: ./data/
-  n_shots: 32
-  n_queries: 32
+  n_shots: 64
+  n_queries: 64
   train_ratio: None
   test_ratio: None
   train_size: 1
@@ -49,9 +50,9 @@ datasets:
     val: true
     test: false
   list_combine_train:
-  - income
+  - calhousing
   list_combine_val:
-  - income
+  - calhousing
   list_combine_test:
-  - income
-random_state: true
+  - calhousing
+random_state: 26

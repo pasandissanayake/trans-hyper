@@ -1,9 +1,9 @@
-name: tabpfn-income
-note: TabPFN hypernetwork with 32-shot income dataset, without learning rate schedule
-save_dir: ./save/
+name: bank-hpo-n64
+note: TabPFN hypernetwork with 64-shot bank dataset, with weight decay
+save_dir: ./save/hpo-bank
 eval_model: false
 wandb_auth: wandb_auth.yaml
-wandb_sweep_cfg: cfgs/sweeps/sweeptest.yaml
+wandb_sweep_cfg: ./cfgs/pfn/hpo-bank/sweeptest.yaml
 debug: true
 debug_datasets: false
 debug_hypernet: false
@@ -28,11 +28,12 @@ trainer:
   optimizer:
     name: adam
     args:
-      lr: 0.0001
+      lr: 0.0002
+      weight_decay: 0.0001
 datasets:
   data_root: ./data/
-  n_shots: 32
-  n_queries: 32
+  n_shots: 64
+  n_queries: 64
   train_ratio: None
   test_ratio: None
   train_size: 1
@@ -49,9 +50,9 @@ datasets:
     val: true
     test: false
   list_combine_train:
-  - income
+  - bank
   list_combine_val:
-  - income
+  - bank
   list_combine_test:
-  - income
-random_state: true
+  - bank
+random_state: 26

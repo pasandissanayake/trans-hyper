@@ -1,0 +1,1 @@
+python main.py --name "tabpfn-income-n16-sweepLRDepth" --cfg "cfgs/pfn/n16/income.yaml" --group "tabpfn-n16-sweepLRDepth" -w

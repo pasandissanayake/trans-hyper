@@ -25,6 +25,7 @@ class FewShotDataset(Dataset):
         col_permutation: bool,
         shuffle: bool,
         debug: bool,
+        random_seed: int | bool,
         shots_with_labels: bool = True,
     ):
         super().__init__()
@@ -40,6 +41,16 @@ class FewShotDataset(Dataset):
 
         self.col_permutation = col_permutation
         self.shots_with_labels = shots_with_labels
+
+        if type(random_seed) is int:
+            self.random_seed = random_seed
+        elif random_seed:
+            self.random_seed = np.random.randint(low=1, high=1000)
+        else:
+            self.random_seed = 42
+
+        if debug:
+            print(f"Few-shot dataset random seed = {self.random_seed}")
 
         # Load all datasets
         self.datasets = {}
@@ -60,7 +71,7 @@ class FewShotDataset(Dataset):
                 raise ValueError(f"Split should be one of train, val or test. Received {self.split}")
             
             if self.shuffle:
-                df = df.sample(frac=1).reset_index(drop=True)
+                df = df.sample(frac=1, random_state=self.random_seed).reset_index(drop=True)
                 
             self.datasets[name] = df
             self.handlers[name] = handler
@@ -80,7 +91,7 @@ class FewShotDataset(Dataset):
         self.ds_counts = {}
         block_size = self.n_queries if self.queries_same_as_shots else (self.n_shots + self.n_queries)
         i = 0
-        rng = np.random.RandomState(42)
+        rng = np.random.RandomState(self.random_seed)
         while len(self.assignments) < self.split_size:
             ds_name = rng.choice(dataset_names)
             # keep track of the number of datapoints coming from each dataset, for debugging purposes
@@ -228,6 +239,7 @@ class MetaDatasetBuilder:
         shuffle: bool,
         queries_same_as_shots: bool,
         debug: bool,
+        random_seed: int | bool,
         shots_with_labels: dict[str, bool] = {"train": True, "val": True, "test": False},
     ):
         self.datasets = {
@@ -244,7 +256,8 @@ class MetaDatasetBuilder:
                 queries_same_as_shots=queries_same_as_shots,
                 balance_labels=train_balance,
                 debug=debug,
-                shots_with_labels=shots_with_labels["train"]
+                shots_with_labels=shots_with_labels["train"],
+                random_seed=random_seed
             ),
             "val": FewShotDataset(
                 dataset_names=val_datasets,
@@ -259,7 +272,8 @@ class MetaDatasetBuilder:
                 max_n_features=max_n_features,
                 balance_labels=val_balance,
                 debug=debug,
-                shots_with_labels=shots_with_labels["val"]
+                shots_with_labels=shots_with_labels["val"],
+                random_seed=random_seed
             ),
             "test": FewShotDataset(
                 dataset_names=test_datasets,
@@ -274,7 +288,8 @@ class MetaDatasetBuilder:
                 max_n_features=max_n_features,
                 balance_labels=test_balance,
                 debug=debug,
-                shots_with_labels=shots_with_labels["test"]
+                shots_with_labels=shots_with_labels["test"],
+                random_seed=random_seed
             ),
         }
 

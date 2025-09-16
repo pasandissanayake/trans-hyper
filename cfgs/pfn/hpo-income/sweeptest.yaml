@@ -1,0 +1,23 @@
+program: main.py
+name: income-hpo-n64-weightDecay
+method: grid
+metric:
+  goal: minimize
+  name: test/loss
+
+parameters:
+  learning_rate:
+    distribution: categorical
+    values: [0.001, 0.0002, 0.0001]
+
+  depth:
+    distribution: categorical
+    values: [3, 4, 5]
+
+  weight_decay:
+    distribution: categorical
+    values: [0.01, 0.001, 0.0001]
+
+  seed:
+    distribution: categorical
+    values: [42, 26, 14]
