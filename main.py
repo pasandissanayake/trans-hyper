@@ -125,7 +125,7 @@ def main():
             sweep_id = wandb.sweep(sweep_cfg, project=wandb_auth['project'])
             def train_wrapper():
                 train(cfg, sweep=True)
-            wandb.agent(sweep_id, train_wrapper, count=20)
+            wandb.agent(sweep_id, train_wrapper, count=90)
         else:
             train(cfg=cfg, sweep=False)
     else:

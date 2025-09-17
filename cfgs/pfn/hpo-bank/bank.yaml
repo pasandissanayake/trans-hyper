@@ -1,4 +1,4 @@
-name: bank-hpo-n64
+name: hpo-bank-n64
 note: TabPFN hypernetwork with 64-shot bank dataset, with weight decay
 save_dir: ./save/hpo-bank
 eval_model: false

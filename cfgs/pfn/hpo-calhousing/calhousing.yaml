@@ -1,4 +1,4 @@
-name: tabpfn-calhousing
+name: hpo-calhousing-n64
 note: TabPFN hypernetwork with 64-shot calhousing dataset, with weight decay
 save_dir: ./save/hpo-calhousing
 eval_model: false

@@ -1,4 +1,4 @@
-name: tabpfn-income
+name: hpo-income-n64
 note: TabPFN hypernetwork with 64-shot income dataset, with weight decay
 save_dir: ./save/hpo-income
 eval_model: false
