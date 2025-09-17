@@ -55,4 +55,4 @@ datasets:
   - calhousing
   list_combine_test:
   - calhousing
-random_state: 26
+random_state: 14

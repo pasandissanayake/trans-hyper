@@ -6,7 +6,7 @@ import logging
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.optim import SGD, Adam
+from torch.optim import SGD, Adam, AdamW
 from tensorboardX import SummaryWriter
 
 
@@ -113,7 +113,8 @@ def compute_num_params(model, text=True, trainable_only=False):
 def make_optimizer(params, cfg, sd=None):
     optimizer = {
         'sgd': SGD,
-        'adam': Adam
+        'adam': Adam,
+        'adamW': AdamW
     }[cfg.trainer.optimizer.name](params, **cfg.trainer.optimizer.args)
     if sd is not None:
         optimizer.load_state_dict(sd)

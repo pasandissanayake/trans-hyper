@@ -35,6 +35,13 @@ class TabPFNModel(nn.Module):
             nn.LayerNorm(normalized_shape=total_params)
         )
 
+        def init_weights(m):
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_uniform_(m.weight)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+        self.regressor.apply(init_weights)
+
         if self.debug:
             print(f"Initializing hypernet {self.name}, name: {self.hypernet_cfg.name}")
             print(f"total hyponet params: {total_params}")

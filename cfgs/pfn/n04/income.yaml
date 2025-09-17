@@ -3,7 +3,7 @@ note: TabPFN hypernetwork with 4-shot income dataset, without learning rate sche
 save_dir: ./save/
 eval_model: false
 wandb_auth: wandb_auth.yaml
-wandb_sweep_cfg: cfgs/sweeps/sweeptest.yaml
+wandb_sweep_cfg: false
 debug: true
 debug_datasets: false
 debug_hypernet: false
@@ -26,7 +26,7 @@ trainer:
   vis_epoch: 25
   save_epoch: 500
   optimizer:
-    name: adam
+    name: adamW
     args:
       lr: 0.0001
 datasets:
@@ -54,4 +54,4 @@ datasets:
   - income
   list_combine_test:
   - income
-random_state: true
+random_state: 14
