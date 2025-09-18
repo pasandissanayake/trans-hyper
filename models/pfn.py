@@ -32,7 +32,10 @@ class TabPFNModel(nn.Module):
         
         self.regressor = nn.Sequential(
             nn.Linear(192 * self.cfg.datasets.n_queries, total_params),
-            nn.LayerNorm(normalized_shape=total_params)
+            # nn.Linear(500, total_params),
+            nn.LayerNorm(normalized_shape=total_params),
+            # nn.Tanh(),
+            # Scaler(init_scale=0.5)
         )
 
         def init_weights(m):
@@ -70,3 +73,11 @@ class TabPFNModel(nn.Module):
             start_idx = end_idx
         self.hyponet.set_params(params=params)
         return self.hyponet
+    
+class Scaler(nn.Module):
+    def __init__(self, init_scale):
+        super().__init__()
+        self.scale = nn.Parameter(torch.tensor(init_scale, dtype=torch.float32))
+
+    def forward(self, x):
+        return x * self.scale
