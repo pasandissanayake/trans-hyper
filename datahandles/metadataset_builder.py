@@ -180,6 +180,8 @@ class FewShotDataset(Dataset):
 
         # Shots = text+label strings
         shots_df = df.iloc[shot_idx]
+        if self.split == "train":
+            shots_df = shots_df.sample(frac=1, random_state=self.random_seed).reset_index(drop=True)
         shots_df = handler.apply_permutation(shots_df, permutation)
         prompts = handler.apply_template(shots_df)
         if self.shots_with_labels:
@@ -189,6 +191,8 @@ class FewShotDataset(Dataset):
         
         # Queries
         query_df = df.iloc[query_idx]
+        if self.split == "train":
+            query_df = query_df.sample(frac=1, random_state=self.random_seed).reset_index(drop=True)
         query_df = handler.apply_permutation(query_df, permutation)
         query_df = handler.preprocess(query_df)
         queries_x = query_df.iloc[:, :-1].to_numpy(dtype=np.float32)

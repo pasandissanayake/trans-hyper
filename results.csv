@@ -1,0 +1,2 @@
+dataset,seed,train_examples,roc_auc
+bank,14,4,0.38296098249997484

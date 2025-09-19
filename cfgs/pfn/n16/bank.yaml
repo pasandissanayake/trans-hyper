@@ -4,7 +4,7 @@ save_dir: ./save/
 eval_model: false
 wandb_auth: wandb_auth.yaml
 wandb_sweep_cfg: false
-debug: true
+debug: false
 debug_datasets: false
 debug_hypernet: false
 debug_hyponet: false
@@ -32,17 +32,17 @@ trainer:
       weight_decay: 0.001
 datasets:
   data_root: ./data/
-  n_shots: 16
-  n_queries: 16
+  n_shots: 4
+  n_queries: 4
   train_ratio: None
   test_ratio: None
-  train_size: 1
+  train_size: 2
   val_size: 1
   test_size: 1
   train_permutation: true
   val_permutation: true
   test_permutation: false
-  queries_same_as_shots: true
+  queries_same_as_shots: false
   max_n_features: false
   set_hyponet_indim: true
   balanced:
@@ -55,4 +55,4 @@ datasets:
   - bank
   list_combine_test:
   - bank
-random_state: 14
+random_state: 0

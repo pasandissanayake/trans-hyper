@@ -4,7 +4,7 @@ save_dir: ./save/
 eval_model: false
 wandb_auth: wandb_auth.yaml
 wandb_sweep_cfg: false
-debug: true
+debug: false
 debug_datasets: false
 debug_hypernet: false
 debug_hyponet: false
@@ -28,8 +28,8 @@ trainer:
   optimizer:
     name: adam
     args:
-      lr: 0.0002
-      weight_decay: 0.001
+      lr: 0.00005
+      weight_decay: 0.0
 datasets:
   data_root: ./data/
   n_shots: 4
@@ -55,4 +55,4 @@ datasets:
   - bank
   list_combine_test:
   - bank
-random_state: 14
+random_state: 0

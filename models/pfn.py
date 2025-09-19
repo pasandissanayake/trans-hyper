@@ -32,6 +32,7 @@ class TabPFNModel(nn.Module):
         
         self.regressor = nn.Sequential(
             nn.Linear(192 * self.cfg.datasets.n_queries, total_params),
+            # nn.Linear(192 * self.cfg.datasets.n_queries, 500),
             # nn.Linear(500, total_params),
             nn.LayerNorm(normalized_shape=total_params),
             # nn.Tanh(),
@@ -59,7 +60,7 @@ class TabPFNModel(nn.Module):
         embeddings = self.extractor.get_embeddings(X, y, X, data_source="test")
         embeddings = einops.rearrange(embeddings, "batch sample features -> batch (sample features)")
         outputs = torch.tensor(embeddings, dtype=torch.float32).cuda()
-
+        
         # print(f"devices -- embeds: {embeddings.device}, outputs: {outputs.device}")
 
         outputs = self.regressor(outputs)

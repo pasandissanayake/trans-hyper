@@ -4,7 +4,7 @@ save_dir: ./save/
 eval_model: false
 wandb_auth: wandb_auth.yaml
 wandb_sweep_cfg: false
-debug: true
+debug: false
 debug_datasets: false
 debug_hypernet: false
 debug_hyponet: false
@@ -29,7 +29,6 @@ trainer:
     name: adam
     args:
       lr: 0.0002
-      weight_decay: 0.001
 datasets:
   data_root: ./data/
   n_shots: 4
@@ -55,4 +54,4 @@ datasets:
   - calhousing
   list_combine_test:
   - calhousing
-random_state: 14
+random_state: 0

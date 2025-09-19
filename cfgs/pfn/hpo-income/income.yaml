@@ -3,7 +3,7 @@ note: TabPFN hypernetwork with 64-shot income dataset, with weight decay
 save_dir: ./save/hpo-income
 eval_model: false
 wandb_auth: wandb_auth.yaml
-wandb_sweep_cfg: cfgs/pfn/hpo-income/sweeptest.yaml
+wandb_sweep_cfg: false
 debug: true
 debug_datasets: false
 debug_hypernet: false
@@ -28,15 +28,15 @@ trainer:
   optimizer:
     name: adam
     args:
-      lr: 0.0001
-      weight_decay: 0.0001
+      lr: 0.0002
+      weight_decay: 0.001
 datasets:
   data_root: ./data/
-  n_shots: 64
-  n_queries: 64
+  n_shots: 8
+  n_queries: 8
   train_ratio: None
   test_ratio: None
-  train_size: 1
+  train_size: 4
   val_size: 1
   test_size: 1
   train_permutation: true
@@ -55,4 +55,4 @@ datasets:
   - income
   list_combine_test:
   - income
-random_state: 26
+random_state: 0

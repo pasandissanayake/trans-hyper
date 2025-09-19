@@ -19,6 +19,7 @@ def parse_args():
                         help='Experiment name. If not provided, will use the cfg filename.')
     parser.add_argument('--group', type=str, default=None,
                         help='Experiment group name for WandB.')
+    parser.add_argument('--seed', type=int, default=None)
     parser.add_argument('--tag', default=None)
     parser.add_argument('--cudnn', action='store_true')
     parser.add_argument('--port-offset', '-p', type=int, default=0)
@@ -110,6 +111,10 @@ def main():
     cfg = make_cfg(args)
 
     if cfg.debug: print('UNIVERSAL DEBUG MODE ENABLED') # type: ignore
+
+    if args.seed is not None:
+        cfg.random_state = args.seed
+        print(f"Using random seed={args.seed} from command")
 
     if cfg.env.wandb_upload:
         with open(cfg.wandb_auth, 'r') as f:
