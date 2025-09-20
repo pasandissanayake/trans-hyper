@@ -1,6 +1,7 @@
 data/
 save/
 checkpoints/
+tmp/
 *.pyc
 tabllm/data/
 wandb_auth.yaml

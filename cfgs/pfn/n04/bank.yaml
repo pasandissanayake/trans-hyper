@@ -28,8 +28,10 @@ trainer:
   optimizer:
     name: adam
     args:
-      lr: 0.00005
-      weight_decay: 0.0
+      lr: 0.000001
+      weight_decay: 0.000
+    lr_schedule:
+      50: 1
 datasets:
   data_root: ./data/
   n_shots: 4

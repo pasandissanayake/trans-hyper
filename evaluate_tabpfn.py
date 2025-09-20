@@ -3,6 +3,9 @@ import argparse
 import numpy as np
 import pandas as pd
 import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import TensorDataset, DataLoader
 from transformers import AutoTokenizer
 from sklearn.metrics import accuracy_score, f1_score, balanced_accuracy_score, roc_auc_score
 from tqdm import tqdm
@@ -10,7 +13,7 @@ from tqdm import tqdm
 from models import make
 from models.t0 import T0RegressionModel  # noqa: F401
 from datahandles import FewShotDataset
-from utils import load_cfg
+from utils import load_cfg, dict_to_mlp
 
 
 def load_dataset(cfg, test_list, n_shots, n_queries, max_n_features, test_size=1, test_permutation=False):
@@ -51,9 +54,51 @@ def load_dataset(cfg, test_list, n_shots, n_queries, max_n_features, test_size=1
     return test_ds, train_ds
 
 
-def compute_metrics(model, queries, X, y):
+def compute_metrics(model, queries, X, y, post_training: bool, post_training_epochs: int):
     """Run hyponet forward and compute metrics."""
-    hyponet = model(queries)
+    hyponet = dict_to_mlp(weight_dict=model(queries[0]).params, in_dim=X.shape[1]).cuda()
+
+    if post_training:
+        epochs = post_training_epochs    
+        loss_fn = nn.BCEWithLogitsLoss()
+        opt = optim.Adam(hyponet.parameters(), lr=1e-3)
+
+        best_val_auc = -1.0
+        best_epoch = -1
+        for ep in range(1, epochs + 1):
+            hyponet.train()
+            for query in queries:
+                xb = query["queries_x"]
+                yb = query["queries_y"].to(torch.float)
+
+                xb = xb.to("cuda")
+                yb = yb.to("cuda")
+                opt.zero_grad()
+                logits = hyponet(xb)
+                loss = loss_fn(logits[:,1], yb)
+                loss.backward()
+                opt.step()
+            # Validate
+            hyponet.eval()
+            ys, preds = [], []
+            with torch.no_grad():
+                for query in queries:
+                    xb = query["queries_x"]
+                    yb = query["queries_y"].to(torch.float)
+                    xb = xb.to("cuda")
+                    logits = hyponet(xb)
+                    probs = torch.sigmoid(logits).cpu().numpy()
+                    preds.append(probs)
+                    ys.append(yb.numpy())
+            ys = np.concatenate(ys)
+            preds = np.concatenate(preds)
+            val_auc = roc_auc_score(y_true=ys, y_score=preds[:,1])
+            if val_auc > best_val_auc:
+                best_val_auc = val_auc
+                best_epoch = ep
+            # print(f"epoch: {ep:>2}, roc_auc: {val_auc:.2}, best epoch: {best_epoch:>2}")
+
+
     hyponet.eval()
     preds = hyponet.forward(X.unsqueeze(dim=0).cuda())
     preds = preds.detach().cpu().numpy()
@@ -76,7 +121,7 @@ def compute_metrics(model, queries, X, y):
     }
 
 
-def compute_avg_metrics(model, cfg, ds_name, n_shots, n_queries, n_samples, max_n_features):
+def compute_avg_metrics(model, cfg, ds_name, n_shots, n_queries, n_samples, max_n_features, post_training, post_training_epochs):
     """Average metrics across test samples."""
     if n_shots < 1:
         test_ds, train_ds = load_dataset(cfg, [ds_name], n_shots=n_queries, n_queries=n_queries,
@@ -89,10 +134,15 @@ def compute_avg_metrics(model, cfg, ds_name, n_shots, n_queries, n_samples, max_
     for i in range(n_samples):
         if n_queries < 1:
             raise ValueError("Number of queries must be >= 1")
-        queries = train_ds[0]
+        
         X = test_ds[i]['queries_x']
         y = test_ds[i]['queries_y']
-        metrics = compute_metrics(model=model, queries=queries, X=X, y=y)
+        metrics = compute_metrics(model=model, 
+                                  queries=train_ds, 
+                                  X=X, 
+                                  y=y, 
+                                  post_training=post_training, 
+                                  post_training_epochs=post_training_epochs)
         for key, val in metrics.items():
             avg_metrics[key] = avg_metrics.get(key, 0.0) + val
 
@@ -100,7 +150,7 @@ def compute_avg_metrics(model, cfg, ds_name, n_shots, n_queries, n_samples, max_
     return avg_metrics
 
 
-def evaluate_checkpoint(checkpoint_path, device="cuda"):
+def evaluate_checkpoint(checkpoint_path, post_training, post_training_epochs, device="cuda"):
     """Load checkpoint, model, dataset, evaluate and return results row."""
     checkpoint = torch.load(checkpoint_path, map_location=device, weights_only=False)
     cfg = load_cfg(cfg_dict=checkpoint["cfg"])
@@ -120,7 +170,15 @@ def evaluate_checkpoint(checkpoint_path, device="cuda"):
     n_queries = n_queries_dict[ds_name]
     n_shots = total_training_set_size
 
-    metrics = compute_avg_metrics(model, cfg, ds_name, n_shots, n_queries, n_samples, max_n_features)
+    metrics = compute_avg_metrics(model, 
+                                  cfg, 
+                                  ds_name, 
+                                  n_shots, 
+                                  n_queries, 
+                                  n_samples, 
+                                  max_n_features, 
+                                  post_training,
+                                  post_training_epochs)
 
     result = {
         "dataset": ds_name,
@@ -140,7 +198,11 @@ def main():
     parser.add_argument("--outfile", type=str, default="results.csv", help="CSV file to save results")
     parser.add_argument("--device", type=str, default="cuda", help="Device to use (cuda or cpu)")
     parser.add_argument("--epoch", type=str, default="best", help="Select the best or last epoch")
+    parser.add_argument("--post-train", action=argparse.BooleanOptionalAction, help="Whether to train the MLP after inference")
+    parser.add_argument("--pt-epochs", type=int, help="Number of epochs to post-train")
     args = parser.parse_args()
+    
+    print(f"Using the {args.epoch} epoch and post_train={args.post_train}")
 
     results = []
     for folder in tqdm(args.folders, desc="Evaluating checkpoints"):
@@ -152,16 +214,16 @@ def main():
             print("Epoch must be best or last. Got {args.epoch}")
             return
 
-        print(f"Using the {args.epoch} epoch")
+        
 
         if not os.path.exists(checkpoint_path):
             print(f"Warning: {checkpoint_path} not found, skipping")
             continue
-        result = evaluate_checkpoint(checkpoint_path, device=args.device)
+        result = evaluate_checkpoint(checkpoint_path, args.post_train, args.pt_epochs, device=args.device)
         results.append(result)
 
     df = pd.DataFrame(results)
-    print(df.to_string(index=False))
+    print(df.round(2).to_string(index=False))
     df.to_csv(args.outfile, index=False)
     print(f"\nSaved results to {args.outfile}")
 

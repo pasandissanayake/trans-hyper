@@ -32,11 +32,11 @@ trainer:
       weight_decay: 0.001
 datasets:
   data_root: ./data/
-  n_shots: 4
-  n_queries: 4
+  n_shots: 8
+  n_queries: 8
   train_ratio: None
   test_ratio: None
-  train_size: 8
+  train_size: 4
   val_size: 1
   test_size: 1
   train_permutation: true
