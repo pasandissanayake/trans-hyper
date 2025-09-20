@@ -157,8 +157,19 @@ def evaluate_checkpoint(checkpoint_path, post_training, post_training_epochs, de
     model = make(model_name=cfg.hypernet.name, cfg=cfg, sd=checkpoint["model"]).to(device)
 
     if "tokenizer" in cfg.keys():
-        AutoTokenizer.from_pretrained(cfg.tokenizer.model)
-
+        tokenizer = AutoTokenizer.from_pretrained(cfg.tokenizer.model)
+        def model_fn(query):
+                 
+            tokens = tokenizer(query["shots"], 
+                            truncation=cfg.tokenizer.truncation, 
+                            padding=cfg.tokenizer.padding, 
+                            max_length=cfg.tokenizer.max_length,
+                            return_tensors='pt')
+            return model(tokens.to("cuda"))
+    else:
+        def model_fn(query):
+            return model(query)
+    
     total_training_set_size = cfg.datasets.n_shots * cfg.datasets.train_size \
         if cfg.datasets.queries_same_as_shots \
         else (cfg.datasets.n_queries + cfg.datasets.n_shots) * cfg.datasets.train_size
@@ -170,7 +181,7 @@ def evaluate_checkpoint(checkpoint_path, post_training, post_training_epochs, de
     n_queries = n_queries_dict[ds_name]
     n_shots = total_training_set_size
 
-    metrics = compute_avg_metrics(model, 
+    metrics = compute_avg_metrics(model_fn, 
                                   cfg, 
                                   ds_name, 
                                   n_shots, 

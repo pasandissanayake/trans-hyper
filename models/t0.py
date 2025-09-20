@@ -1,3 +1,4 @@
+from typing import Mapping
 from torch import nn
 from transformers import AutoModelForSeq2SeqLM
 import torch.nn.functional as F
@@ -63,3 +64,8 @@ class T0RegressionModel(nn.Module):
             start_idx = end_idx
         self.hyponet.set_params(params=params)
         return self.hyponet
+    
+    def load_state_dict(self, state_dict, strict=True, assign=False):
+        self.regressor.load_state_dict(state_dict=state_dict)
+        state_dict = self.state_dict()
+        return super().load_state_dict(state_dict, strict, assign)
