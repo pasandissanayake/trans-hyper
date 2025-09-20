@@ -182,7 +182,7 @@ def evaluate_checkpoint(checkpoint_path, post_training, post_training_epochs, de
 
     result = {
         "dataset": ds_name,
-        "seed": cfg.random_state,
+        # "seed": cfg.random_state,
         "train_examples": total_training_set_size,
         "roc_auc": metrics["roc_auc"]
     }
@@ -190,6 +190,42 @@ def evaluate_checkpoint(checkpoint_path, post_training, post_training_epochs, de
     del model, checkpoint
     torch.cuda.empty_cache()
     return result
+
+
+# def main():
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("folders", nargs="+", help="List of checkpoint folders")
+#     parser.add_argument("--outfile", type=str, default="results.csv", help="CSV file to save results")
+#     parser.add_argument("--device", type=str, default="cuda", help="Device to use (cuda or cpu)")
+#     parser.add_argument("--epoch", type=str, default="best", help="Select the best or last epoch")
+#     parser.add_argument("--post-train", action=argparse.BooleanOptionalAction, help="Whether to train the MLP after inference")
+#     parser.add_argument("--pt-epochs", type=int, help="Number of epochs to post-train")
+#     args = parser.parse_args()
+    
+#     print(f"Using the {args.epoch} epoch and post_train={args.post_train}")
+
+#     results = []
+#     for folder in tqdm(args.folders, desc="Evaluating checkpoints"):
+#         if args.epoch == "best":
+#             checkpoint_path = os.path.join(folder, "epoch-best-balacc.pth")
+#         elif args.epoch == "last":
+#             checkpoint_path = os.path.join(folder, "epoch-last.pth")
+#         else:
+#             print("Epoch must be best or last. Got {args.epoch}")
+#             return
+
+        
+
+#         if not os.path.exists(checkpoint_path):
+#             print(f"Warning: {checkpoint_path} not found, skipping")
+#             continue
+#         result = evaluate_checkpoint(checkpoint_path, args.post_train, args.pt_epochs, device=args.device)
+#         results.append(result)
+
+#     df = pd.DataFrame(results)
+#     print(df.round(2).to_string(index=False))
+#     df.to_csv(args.outfile, index=False)
+#     print(f"\nSaved results to {args.outfile}")
 
 
 def main():
@@ -204,28 +240,56 @@ def main():
     
     print(f"Using the {args.epoch} epoch and post_train={args.post_train}")
 
-    results = []
-    for folder in tqdm(args.folders, desc="Evaluating checkpoints"):
-        if args.epoch == "best":
-            checkpoint_path = os.path.join(folder, "epoch-best-balacc.pth")
-        elif args.epoch == "last":
-            checkpoint_path = os.path.join(folder, "epoch-last.pth")
-        else:
-            print("Epoch must be best or last. Got {args.epoch}")
-            return
+    # Group folders by base checkpoint name (without the seed)
+    folder_dict = {}
+    for folder in args.folders:
+        # Assume seed is in the format "seedXX" at the end
+        base_name = folder.rsplit("-seed", 1)[0]
+        folder_dict.setdefault(base_name, []).append(folder)
 
-        
+    results_agg = []
+    for base_name, seed_folders in tqdm(folder_dict.items(), desc="Evaluating checkpoint groups"):
+        all_results = []
+        for folder in seed_folders:
+            if args.epoch == "best":
+                checkpoint_path = os.path.join(folder, "epoch-best-balacc.pth")
+            elif args.epoch == "last":
+                checkpoint_path = os.path.join(folder, "epoch-last.pth")
+            else:
+                print(f"Epoch must be 'best' or 'last'. Got {args.epoch}")
+                return
 
-        if not os.path.exists(checkpoint_path):
-            print(f"Warning: {checkpoint_path} not found, skipping")
-            continue
-        result = evaluate_checkpoint(checkpoint_path, args.post_train, args.pt_epochs, device=args.device)
-        results.append(result)
+            if not os.path.exists(checkpoint_path):
+                print(f"Warning: {checkpoint_path} not found, skipping")
+                continue
 
-    df = pd.DataFrame(results)
-    print(df.round(2).to_string(index=False))
-    df.to_csv(args.outfile, index=False)
-    print(f"\nSaved results to {args.outfile}")
+            result = evaluate_checkpoint(checkpoint_path, args.post_train, args.pt_epochs, device=args.device)
+            all_results.append(result)
+
+        if all_results:
+            # Convert list of dicts to DataFrame
+            df_seed = pd.DataFrame(all_results)
+            
+            # Select only numeric columns
+            numeric_cols = df_seed.select_dtypes(include=np.number).columns
+            df_mean = df_seed[numeric_cols].mean().add_suffix("_mean")
+            df_std = df_seed[numeric_cols].std().add_suffix("_std")
+            
+            # Keep non-numeric info (like checkpoint name)
+            df_combined = pd.concat([df_mean, df_std])
+            df_combined["checkpoint"] = base_name
+            results_agg.append(df_combined)
+
+    if results_agg:
+        final_df = pd.DataFrame(results_agg).drop(columns=["train_examples_std"])
+        # Reorder columns: checkpoint first
+        cols = ["checkpoint"] + [c for c in final_df.columns if c != "checkpoint"]
+        final_df = final_df[cols]
+        print(final_df.round(2).to_string(index=False))
+        final_df.to_csv(args.outfile, index=False)
+        print(f"\nSaved aggregated results to {args.outfile}")
+    else:
+        print("No valid results found.")
 
 
 if __name__ == "__main__":
