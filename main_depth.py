@@ -19,11 +19,12 @@ def parse_args():
                         help='Experiment name. If not provided, will use the cfg filename.')
     parser.add_argument('--group', type=str, default=None,
                         help='Experiment group name for WandB.')
-    parser.add_argument('--save-root', default='save')
+    parser.add_argument('--seed', type=int, default=None)
     parser.add_argument('--tag', default=None)
     parser.add_argument('--cudnn', action='store_true')
     parser.add_argument('--port-offset', '-p', type=int, default=0)
     parser.add_argument('--wandb-upload', '-w', action='store_true')
+    parser.add_argument('--hyponet-depth', type=int)
     args = parser.parse_args()
     return args
 
@@ -43,25 +44,31 @@ def make_cfg(args):
     cfg.env.exp_name = exp_name
     cfg.env.exp_group = args.group
     cfg.env.total_gpus = torch.cuda.device_count()
-    cfg.env.save_dir = os.path.join(args.save_root, exp_name)
+
+    if "save_dir" in cfg.keys():
+        cfg.env.save_dir = os.path.join(cfg.save_dir, exp_name)
+    else:
+        cfg.env.save_dir = os.path.join("save/", exp_name)
     cfg.env.wandb_upload = args.wandb_upload
     cfg.env.port = str(29600 + args.port_offset)
     cfg.env.cudnn = args.cudnn
+
+    cfg.hyponet.depth = args.hyponet_depth
    
     return cfg
 
 def adopt_wandb_cfg(cfg, wandb_cfg):
-    # cfg.trainer.optimizer.args.lr = wandb_cfg.learning_rate
-    # cfg.trainer.batch_size = wandb_cfg.batch_size
-    # cfg.datasets.n_shots = wandb_cfg.n_shots
+    cfg.trainer.optimizer.args.lr = wandb_cfg.learning_rate
     cfg.hyponet.depth = wandb_cfg.depth
+    cfg.trainer.optimizer.args.weight_decay = wandb_cfg.weight_decay
+    cfg.random_seed = wandb_cfg.seed
     return cfg
 
 def train(cfg:Munch, sweep:bool):
     if cfg.env.wandb_upload:
         wandb_name = os.environ["WANDB_NAME"]
         timestamp = datetime.now().strftime("%y%m%d%H%M")
-        wandb.init(name=f"{wandb_name}-{timestamp}", group=cfg.env.exp_group)
+        wandb.init(project=cfg.wandb_project, name=f"{wandb_name}-{timestamp}", group=cfg.env.exp_group)
     if sweep:
         cfg = adopt_wandb_cfg(cfg, wandb.config)
 
@@ -86,7 +93,7 @@ def train(cfg:Munch, sweep:bool):
         queries_same_as_shots=cfg.datasets.queries_same_as_shots,
         debug=cfg.debug or cfg.debug_datasets,
         random_seed=cfg.random_state,
-        shots_with_labels={'train': True, 'val': True, 'test': False}
+        shots_with_labels={'train': True, 'val': True, 'test': False},
     )
     
     meta_datasets = meta_dataset_builder.get_datasets()
@@ -108,12 +115,17 @@ def main():
 
     if cfg.debug: print('UNIVERSAL DEBUG MODE ENABLED') # type: ignore
 
+    if args.seed is not None:
+        cfg.random_state = args.seed
+        print(f"Using random seed={args.seed} from command")
+
     if cfg.env.wandb_upload:
         with open(cfg.wandb_auth, 'r') as f:
             wandb_auth = yaml.load(f, Loader=yaml.FullLoader)
         os.environ['WANDB_DIR'] = cfg.env.save_dir
         os.environ['WANDB_NAME'] = cfg.env.exp_name
         os.environ['WANDB_API_KEY'] = wandb_auth['api_key']
+        cfg.wandb_project = wandb_auth['project']
 
         if cfg.wandb_sweep_cfg:
             with open(cfg.wandb_sweep_cfg, 'r') as f:
@@ -121,7 +133,7 @@ def main():
             sweep_id = wandb.sweep(sweep_cfg, project=wandb_auth['project'])
             def train_wrapper():
                 train(cfg, sweep=True)
-            wandb.agent(sweep_id, train_wrapper, count=10)
+            wandb.agent(sweep_id, train_wrapper, count=90)
         else:
             train(cfg=cfg, sweep=False)
     else:

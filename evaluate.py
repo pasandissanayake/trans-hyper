@@ -177,7 +177,7 @@ def evaluate_checkpoint(checkpoint_path, post_training, post_training_epochs, de
     ds_name = cfg.datasets.list_combine_train[0]
     max_n_features = cfg.hyponet.in_dim
     n_samples = 1
-    n_queries_dict = {"bank": 43211, "calhousing": 19640, "income": 44222}
+    n_queries_dict = {"bank": 43211, "blood": 374, "calhousing": 19640, "income": 44222}
     n_queries = n_queries_dict[ds_name]
     n_shots = total_training_set_size
 
