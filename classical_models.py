@@ -445,7 +445,7 @@ if __name__ == '__main__':
     mlp_arch = (4, 10)  # (n_hidden_layers, width_of_hidden_layers)
     checkpoint_dir = f"checkpoints/{ds_name}/n{n_shots:0>2}"
 
-    n_queries_dict = {"bank": 43211, "blood": 374, "calhousing": 19640, "income": 44222}
+    n_queries_dict = {"bank": 43211, "blood": 374, "calhousing": 19640, "heart": 459, "income": 44222}
     test_ds = FewShotDataset(
         dataset_names=[ds_name],
         data_root="./data",

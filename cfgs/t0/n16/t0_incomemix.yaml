@@ -1,0 +1,67 @@
+name: tabpfn-incomemix
+note: T0 hypernetwork with 8-shot income dataset, with learning rate schedule -- with
+  swapped feature names
+save_dir: ./save/
+eval_model: false
+wandb_auth: wandb_auth.yaml
+wandb_sweep_cfg: false
+debug: true
+debug_datasets: false
+debug_hypernet: false
+debug_hyponet: false
+debug_trainer: false
+hypernet:
+  name: t0
+  model: bigscience/T0pp
+hyponet:
+  model: mlp
+  in_dim: 0
+  out_dim: 2
+  hidden_dim: 10
+  depth: 4
+tokenizer:
+  name: t0_tokenizer
+  model: bigscience/T0pp
+  truncation: true
+  padding: max_length
+  max_length: 128
+trainer:
+  name: t0_trainer
+  batch_size: 1
+  n_workers: 1
+  max_epoch: 300
+  eval_epoch: 1
+  vis_epoch: 25
+  save_epoch: 500
+  optimizer:
+    name: adam
+    args:
+      lr: 1.0e-05
+    lr_schedule:
+      150: 0.5
+      250: 0.25
+datasets:
+  data_root: ./data/
+  n_shots: 16
+  n_queries: 16
+  train_ratio: None
+  test_ratio: None
+  train_size: 1
+  val_size: 1
+  test_size: 1
+  train_permutation: true
+  val_permutation: true
+  test_permutation: false
+  queries_same_as_shots: true
+  max_n_features: false
+  set_hyponet_indim: true
+  balanced:
+    train: true
+    val: true
+    test: false
+  list_combine_train:
+  - incomemix
+  list_combine_val:
+  - incomemix
+  list_combine_test:
+  - incomemix
