@@ -1,5 +1,5 @@
-name: t0-bank
-note: T0 hypernetwork with 8-shot bank dataset, with learning rate schedule
+name: t0-blood
+note: T0 hypernetwork with 8-shot blood dataset, with learning rate schedule
 save_dir: ./save/
 eval_model: false
 wandb_auth: wandb_auth.yaml
@@ -11,7 +11,7 @@ debug_hyponet: false
 debug_trainer: false
 hypernet:
   name: t0
-  model: bigscience/T0pp
+  model: bigscience/T0_3B
 hyponet:
   model: mlp
   in_dim: 0
@@ -20,7 +20,7 @@ hyponet:
   depth: 4
 tokenizer:
   name: t0_tokenizer
-  model: bigscience/T0pp
+  model: bigscience/T0_3B
   truncation: true
   padding: max_length
   max_length: 128
@@ -41,8 +41,8 @@ trainer:
       250: 0.25
 datasets:
   data_root: ./data/
-  n_shots: 8
-  n_queries: 8
+  n_shots: 4
+  n_queries: 4
   train_ratio: None
   test_ratio: None
   train_size: 1
@@ -59,8 +59,8 @@ datasets:
     val: true
     test: false
   list_combine_train:
-  - bank
+  - blood
   list_combine_val:
-  - bank
+  - blood
   list_combine_test:
-  - bank
+  - blood

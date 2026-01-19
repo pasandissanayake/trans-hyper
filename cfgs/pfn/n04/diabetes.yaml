@@ -1,31 +1,24 @@
-name: t0-bank
-note: T0 hypernetwork with 8-shot bank dataset, with learning rate schedule
+name: tabpfn-diabetes
+note: TabPFN hypernetwork with 4-shot diabetes dataset, without learning rate schedule
 save_dir: ./save/
 eval_model: false
 wandb_auth: wandb_auth.yaml
 wandb_sweep_cfg: false
-debug: true
+debug: false
 debug_datasets: false
 debug_hypernet: false
 debug_hyponet: false
 debug_trainer: false
 hypernet:
-  name: t0
-  model: bigscience/T0pp
+  name: tabpfn
 hyponet:
   model: mlp
   in_dim: 0
   out_dim: 2
   hidden_dim: 10
   depth: 4
-tokenizer:
-  name: t0_tokenizer
-  model: bigscience/T0pp
-  truncation: true
-  padding: max_length
-  max_length: 128
 trainer:
-  name: t0_trainer
+  name: tabpfn_trainer
   batch_size: 1
   n_workers: 1
   max_epoch: 300
@@ -35,14 +28,11 @@ trainer:
   optimizer:
     name: adam
     args:
-      lr: 1.0e-05
-    lr_schedule:
-      150: 0.5
-      250: 0.25
+      lr: 0.0002
 datasets:
   data_root: ./data/
-  n_shots: 8
-  n_queries: 8
+  n_shots: 4
+  n_queries: 4
   train_ratio: None
   test_ratio: None
   train_size: 1
@@ -59,8 +49,9 @@ datasets:
     val: true
     test: false
   list_combine_train:
-  - bank
+  - diabetes
   list_combine_val:
-  - bank
+  - diabetes
   list_combine_test:
-  - bank
+  - diabetes
+random_state: 0

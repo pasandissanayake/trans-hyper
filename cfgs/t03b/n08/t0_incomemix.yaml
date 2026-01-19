@@ -1,5 +1,6 @@
-name: t0-bank
-note: T0 hypernetwork with 8-shot bank dataset, with learning rate schedule
+name: tabpfn-incomemix
+note: T0 hypernetwork with 8-shot income dataset, with learning rate schedule -- with
+  swapped feature names
 save_dir: ./save/
 eval_model: false
 wandb_auth: wandb_auth.yaml
@@ -59,8 +60,8 @@ datasets:
     val: true
     test: false
   list_combine_train:
-  - bank
+  - incomemix
   list_combine_val:
-  - bank
+  - incomemix
   list_combine_test:
-  - bank
+  - incomemix

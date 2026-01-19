@@ -1,5 +1,5 @@
-name: t0-bank
-note: T0 hypernetwork with 8-shot bank dataset, with learning rate schedule
+name: t0-car
+note: T0 hypernetwork with 8-shot car dataset, with learning rate schedule
 save_dir: ./save/
 eval_model: false
 wandb_auth: wandb_auth.yaml
@@ -41,8 +41,8 @@ trainer:
       250: 0.25
 datasets:
   data_root: ./data/
-  n_shots: 8
-  n_queries: 8
+  n_shots: 4
+  n_queries: 4
   train_ratio: None
   test_ratio: None
   train_size: 1
@@ -59,8 +59,8 @@ datasets:
     val: true
     test: false
   list_combine_train:
-  - bank
+  - car
   list_combine_val:
-  - bank
+  - car
   list_combine_test:
-  - bank
+  - car

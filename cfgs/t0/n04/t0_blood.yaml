@@ -1,45 +1,29 @@
-# experiment configuration
 name: t0-blood
-note: "T0 hypernetwork with 8-shot blood dataset, with learning rate schedule"
-save_dir: './save/'
-eval_model: false # "/export/pasand/trans-hyper/save/t0pp-calhouse-finonly/epoch-10.pth"
-wandb_auth: 'wandb_auth.yaml'
-wandb_sweep_cfg: false # 'cfgs/sweeps/sweeptest.yaml'
-
-
-# debugging configuration
+note: T0 hypernetwork with 8-shot blood dataset, with learning rate schedule
+save_dir: ./save/
+eval_model: false
+wandb_auth: wandb_auth.yaml
+wandb_sweep_cfg: false
 debug: true
 debug_datasets: false
 debug_hypernet: false
 debug_hyponet: false
 debug_trainer: false
-
-
-# hypernet configuration
 hypernet:
   name: t0
   model: bigscience/T0pp
-
-
-# hyponet configuration
 hyponet:
   model: mlp
-  in_dim: 0 # to be set from dataset
+  in_dim: 0
   out_dim: 2
   hidden_dim: 10
   depth: 4
-
-
-# tokenizer configuration
 tokenizer:
   name: t0_tokenizer
   model: bigscience/T0pp
   truncation: true
   padding: max_length
   max_length: 128
-
-
-# trainer configuration
 trainer:
   name: t0_trainer
   batch_size: 1
@@ -51,12 +35,10 @@ trainer:
   optimizer:
     name: adam
     args:
-      lr: 1.e-5
+      lr: 1.0e-05
     lr_schedule:
       150: 0.5
       250: 0.25
-    
-# dataset configuration
 datasets:
   data_root: ./data/
   n_shots: 4
@@ -72,19 +54,13 @@ datasets:
   queries_same_as_shots: true
   max_n_features: false
   set_hyponet_indim: true
-
   balanced:
     train: true
     val: true
     test: false
-
-  list_combine_train: # list of datasets to combine
-    - blood
-        
-  list_combine_val: # list of datasets to combine for validation
-    - blood
-  
-  list_combine_test: # list of datasets to combine for testing
-    - blood
-
-
+  list_combine_train:
+  - blood
+  list_combine_val:
+  - blood
+  list_combine_test:
+  - blood

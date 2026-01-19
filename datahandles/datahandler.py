@@ -41,11 +41,12 @@ class DataHandler:
         self.apply_template = apply_template
 
         def preprocess(df: pd.DataFrame):
-            df = self._preprocess_numerical(
-                ref_df=self.train_df,
-                df=df,
-                num_cols=self.num_cols
-            )
+            if self.num_cols != []:
+                df = self._preprocess_numerical(
+                    ref_df=self.train_df,
+                    df=df,
+                    num_cols=self.num_cols
+                )
 
             cat_dict = {
                 col: self.column_info[col]["values"] for col in self.cat_cols
@@ -102,6 +103,9 @@ class DataHandler:
         """
         
         df_proc = df.copy()
+
+        if num_cols == []:
+            return df_proc
         
         if method == "standard":
             stats = ref_df[num_cols].agg(["mean", "std"]).T

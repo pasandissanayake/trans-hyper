@@ -1,5 +1,5 @@
-name: t0-bank
-note: T0 hypernetwork with 8-shot bank dataset, with learning rate schedule
+name: t0pp-creditg
+note: T0 hypernetwork with 8-shot creditg dataset, with learning rate schedule
 save_dir: ./save/
 eval_model: false
 wandb_auth: wandb_auth.yaml
@@ -59,8 +59,8 @@ datasets:
     val: true
     test: false
   list_combine_train:
-  - bank
+  - creditg
   list_combine_val:
-  - bank
+  - creditg
   list_combine_test:
-  - bank
+  - creditg
