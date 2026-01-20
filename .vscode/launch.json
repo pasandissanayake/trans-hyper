@@ -1,0 +1,27 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug TALENT Train Script",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/TALENT/test/train_model_deep.py",
+      "console": "integratedTerminal",
+      "args": [
+        "--dataset", "bank",
+        "--dataset_path", "${workspaceFolder}/TALENT/example_datasets",
+        "--model_type", "tabpfn",
+        "--few_shot_sizes", "4",
+        "--seed_num", "1",
+        "--gpu", "1",
+        "--normalization", "none",
+        "--cat_policy", "indices"
+      ],
+      "env": {
+        "PYTHONPATH": "${env:PYTHONPATH}:/export/pasand/trans-hyper/TALENT"
+      },
+      "python": "/afs/glue.umd.edu/home/glue/p/a/pasand/home/miniconda3/envs/talent/bin/python",
+      "justMyCode": false
+    }
+  ]
+}
