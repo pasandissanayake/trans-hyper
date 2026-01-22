@@ -59,6 +59,9 @@ def compute_metrics(model, queries, X, y, post_training: bool, post_training_epo
     hyponet = dict_to_mlp(weight_dict=model(queries[0]).params, in_dim=X.shape[1]).cuda()
 
     if post_training:
+        num_trainable_params = sum(p.numel() for p in hyponet.parameters() if p.requires_grad)
+        print(f'Number of trainable parameters in MLP: {num_trainable_params:,}')
+
         epochs = post_training_epochs    
         loss_fn = nn.BCEWithLogitsLoss()
         opt = optim.Adam(hyponet.parameters(), lr=1e-3)

@@ -1,4 +1,2 @@
 checkpoint,train_examples_mean,roc_auc_mean,roc_auc_std
-save/tabpfn-jungle-n04,4.0,0.6679022726199532,0.07501420479952288
-save/tabpfn-jungle-n08,8.0,0.7126480149356016,0.03934258036172584
-save/tabpfn-jungle-n16,16.0,0.6770995005877336,0.07394058110067289
+save/tabpfn-blood-n04-test/,4.0,0.6517051054602799,
