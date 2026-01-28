@@ -108,6 +108,9 @@ def compute_metrics(model, queries, X, y, post_training: bool, post_training_epo
     preds = np.squeeze(preds)
     y_pred = np.argmax(preds, axis=1)
 
+    if np.isnan(preds).any() or np.isinf(preds).any():
+        print("NaNs in preds!", np.isnan(preds).sum())
+
     val_counts = pd.Series(y).value_counts()
     const_pred_acc = max(val_counts) / sum(val_counts)
     balanced_acc = balanced_accuracy_score(y, y_pred)
@@ -180,7 +183,7 @@ def evaluate_checkpoint(checkpoint_path, post_training, post_training_epochs, de
     ds_name = cfg.datasets.list_combine_train[0]
     max_n_features = cfg.hyponet.in_dim
     n_samples = 1
-    n_queries_dict = {"bank": 43211, "blood": 374, "calhousing": 19640, "car": 864, "creditg": 500, "diabetes": 384, "heart": 459, "income": 44222, "incomemix": 44222, "jungle": 42819}
+    n_queries_dict = {"bank": 43211, "blood": 374, "calhousing": 19640, "car": 864, "creditg": 500, "diabetes": 384, "heart": 459, "higgs": 96049, "income": 44222, "incomemix": 44222, "jungle": 42819}
     n_queries = n_queries_dict[ds_name]
     n_shots = total_training_set_size
 

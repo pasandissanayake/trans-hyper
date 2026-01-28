@@ -1,2 +1,4 @@
 checkpoint,train_examples_mean,roc_auc_mean,roc_auc_std
-save/tabpfn-blood-n04-test/,4.0,0.6517051054602799,
+save/tabpfn-higgs-n04,4.0,0.5013706172564196,0.017742784010396456
+save/tabpfn-higgs-n08,8.0,0.5095973392561625,0.007554140912227913
+save/tabpfn-higgs-n16,16.0,0.5208298083079411,0.020413452501922964
