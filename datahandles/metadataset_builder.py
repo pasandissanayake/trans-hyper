@@ -83,6 +83,11 @@ class FewShotDataset(Dataset):
             for label in df[target_col].unique():
                 self.class_indices[name][label] = df.index[df[target_col] == label].tolist()
 
+        self.class_ptrs = {
+            name: {label: 0 for label in self.class_indices[name]}
+            for name in dataset_names
+        }
+
         # Decide pad dimension
         self.pad_to = max_n_features if max_n_features is not None else self.max_features
         
@@ -136,27 +141,64 @@ class FewShotDataset(Dataset):
         # print(f"Dataset: {ds_name}, number of examples: {len(self.datasets[ds_name])}, current end index: {query_idx[-1]}")
         return (ds_name, shot_idx, query_idx)
 
+    # def _assign_balanced(self, ds_name, i):
+    #     """Return balanced label-wise indices."""
+    #     class_indices = self.class_indices[ds_name]
+    #     labels = list(class_indices.keys())
+    #     n_classes = len(labels)
+
+    #     block_size = self.n_queries if self.queries_same_as_shots else (self.n_shots + self.n_queries)
+    #     queries_per_class = max(1, self.n_queries // n_classes)
+    #     shots_per_class = max(1, self.n_shots // n_classes)
+    #     query_idx = []
+    #     shot_idx = []
+    #     for label in labels:
+    #         indices = class_indices[label]
+    #         shot_start = i * block_size
+    #         shot_end = shot_start + shots_per_class
+    #         query_start = shot_start if self.queries_same_as_shots else shot_end
+    #         query_end = query_start + queries_per_class
+    #         shot_idx.extend(indices[shot_start:shot_end])
+    #         query_idx.extend(indices[query_start:query_end])
+
+    #     # print(f"Dataset: {ds_name}, number of examples: {len(self.datasets[ds_name])}, current end index: {query_idx[-1]}")   
+    #     return (ds_name, shot_idx, query_idx)
+
     def _assign_balanced(self, ds_name, i):
-        """Return balanced label-wise indices."""
         class_indices = self.class_indices[ds_name]
+        ptrs = self.class_ptrs[ds_name]
         labels = list(class_indices.keys())
         n_classes = len(labels)
 
-        block_size = self.n_queries if self.queries_same_as_shots else (self.n_shots + self.n_queries)
-        queries_per_class = max(1, self.n_queries // n_classes)
-        shots_per_class = max(1, self.n_shots // n_classes)
-        query_idx = []
-        shot_idx = []
-        for label in labels:
-            indices = class_indices[label]
-            shot_start = i * block_size
-            shot_end = shot_start + shots_per_class
-            query_start = shot_start if self.queries_same_as_shots else shot_end
-            query_end = query_start + queries_per_class
-            shot_idx.extend(indices[shot_start:shot_end])
-            query_idx.extend(indices[query_start:query_end])
+        # Distribute remainder fairly
+        def split_counts(total):
+            base = total // n_classes
+            rem = total % n_classes
+            return [base + (j < rem) for j in range(n_classes)]
 
-        # print(f"Dataset: {ds_name}, number of examples: {len(self.datasets[ds_name])}, current end index: {query_idx[-1]}")   
+        shots_counts   = split_counts(self.n_shots)
+        queries_counts = split_counts(self.n_queries)
+
+        shot_idx, query_idx = [], []
+
+        for j, label in enumerate(labels):
+            indices = class_indices[label]
+            ptr = ptrs[label]
+
+            s_cnt = shots_counts[j]
+            q_cnt = queries_counts[j]
+
+            # Wrap-around if needed
+            if ptr + s_cnt + q_cnt > len(indices):
+                np.random.shuffle(indices)
+                ptr = 0
+
+            shot_idx.extend(indices[ptr : ptr + s_cnt])
+            query_start = ptr if self.queries_same_as_shots else ptr + s_cnt
+            query_idx.extend(indices[query_start : query_start + q_cnt])
+
+            ptrs[label] = ptr + s_cnt + q_cnt
+
         return (ds_name, shot_idx, query_idx)
 
     def __len__(self):

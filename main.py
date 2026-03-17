@@ -98,6 +98,8 @@ def train(cfg:Munch, sweep:bool):
     train_ds = meta_datasets['train']
     test_ds = meta_datasets['train']
 
+    print(f"###### train_ds: {train_ds[0]['queries_x'].shape}, {train_ds[0]['queries_y']}")
+
     # set the hyponet input dimension from dataset
     if cfg.datasets.set_hyponet_indim:
         cfg.hyponet.in_dim = meta_dataset_builder.max_n_features
