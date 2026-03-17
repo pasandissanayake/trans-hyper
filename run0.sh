@@ -1,30 +1,30 @@
-python main.py --name "tabpfn-higgs-n04-seed14" --cfg "cfgs/pfn/n04/higgs.yaml" --seed 14 --group "tabpfn-higgs-n04" -w
-python main.py --name "tabpfn-higgs-n04-seed26" --cfg "cfgs/pfn/n04/higgs.yaml" --seed 26 --group "tabpfn-higgs-n04" -w
-python main.py --name "tabpfn-higgs-n04-seed42" --cfg "cfgs/pfn/n04/higgs.yaml" --seed 42 --group "tabpfn-higgs-n04" -w
-python main.py --name "tabpfn-higgs-n04-seed58" --cfg "cfgs/pfn/n04/higgs.yaml" --seed 58 --group "tabpfn-higgs-n04" -w
-python main.py --name "tabpfn-higgs-n04-seed97" --cfg "cfgs/pfn/n04/higgs.yaml" --seed 97 --group "tabpfn-higgs-n04" -w
+python main.py --name "tabpfn-mfeatfourier-n04-seed14" --cfg "cfgs/pfn/n04/mfeatfourier.yaml" --seed 14 --group "tabpfn-mfeatfourier-n04" -w
+python main.py --name "tabpfn-mfeatfourier-n04-seed26" --cfg "cfgs/pfn/n04/mfeatfourier.yaml" --seed 26 --group "tabpfn-mfeatfourier-n04" -w
+python main.py --name "tabpfn-mfeatfourier-n04-seed42" --cfg "cfgs/pfn/n04/mfeatfourier.yaml" --seed 42 --group "tabpfn-mfeatfourier-n04" -w
+python main.py --name "tabpfn-mfeatfourier-n04-seed58" --cfg "cfgs/pfn/n04/mfeatfourier.yaml" --seed 58 --group "tabpfn-mfeatfourier-n04" -w
+python main.py --name "tabpfn-mfeatfourier-n04-seed97" --cfg "cfgs/pfn/n04/mfeatfourier.yaml" --seed 97 --group "tabpfn-mfeatfourier-n04" -w
 
-python main.py --name "tabpfn-higgs-n08-seed14" --cfg "cfgs/pfn/n08/higgs.yaml" --seed 14 --group "tabpfn-higgs-n08" -w
-python main.py --name "tabpfn-higgs-n08-seed26" --cfg "cfgs/pfn/n08/higgs.yaml" --seed 26 --group "tabpfn-higgs-n08" -w
-python main.py --name "tabpfn-higgs-n08-seed42" --cfg "cfgs/pfn/n08/higgs.yaml" --seed 42 --group "tabpfn-higgs-n08" -w
-python main.py --name "tabpfn-higgs-n08-seed58" --cfg "cfgs/pfn/n08/higgs.yaml" --seed 58 --group "tabpfn-higgs-n08" -w
-python main.py --name "tabpfn-higgs-n08-seed97" --cfg "cfgs/pfn/n08/higgs.yaml" --seed 97 --group "tabpfn-higgs-n08" -w
+python main.py --name "tabpfn-mfeatfourier-n08-seed14" --cfg "cfgs/pfn/n08/mfeatfourier.yaml" --seed 14 --group "tabpfn-mfeatfourier-n08" -w
+python main.py --name "tabpfn-mfeatfourier-n08-seed26" --cfg "cfgs/pfn/n08/mfeatfourier.yaml" --seed 26 --group "tabpfn-mfeatfourier-n08" -w
+python main.py --name "tabpfn-mfeatfourier-n08-seed42" --cfg "cfgs/pfn/n08/mfeatfourier.yaml" --seed 42 --group "tabpfn-mfeatfourier-n08" -w
+python main.py --name "tabpfn-mfeatfourier-n08-seed58" --cfg "cfgs/pfn/n08/mfeatfourier.yaml" --seed 58 --group "tabpfn-mfeatfourier-n08" -w
+python main.py --name "tabpfn-mfeatfourier-n08-seed97" --cfg "cfgs/pfn/n08/mfeatfourier.yaml" --seed 97 --group "tabpfn-mfeatfourier-n08" -w
 
-python main.py --name "tabpfn-higgs-n16-seed14" --cfg "cfgs/pfn/n16/higgs.yaml" --seed 14 --group "tabpfn-higgs-n16" -w
-python main.py --name "tabpfn-higgs-n16-seed26" --cfg "cfgs/pfn/n16/higgs.yaml" --seed 26 --group "tabpfn-higgs-n16" -w
-python main.py --name "tabpfn-higgs-n16-seed42" --cfg "cfgs/pfn/n16/higgs.yaml" --seed 42 --group "tabpfn-higgs-n16" -w
-python main.py --name "tabpfn-higgs-n16-seed58" --cfg "cfgs/pfn/n16/higgs.yaml" --seed 58 --group "tabpfn-higgs-n16" -w
-python main.py --name "tabpfn-higgs-n16-seed97" --cfg "cfgs/pfn/n16/higgs.yaml" --seed 97 --group "tabpfn-higgs-n16" -w
+python main.py --name "tabpfn-mfeatfourier-n16-seed14" --cfg "cfgs/pfn/n16/mfeatfourier.yaml" --seed 14 --group "tabpfn-mfeatfourier-n16" -w
+python main.py --name "tabpfn-mfeatfourier-n16-seed26" --cfg "cfgs/pfn/n16/mfeatfourier.yaml" --seed 26 --group "tabpfn-mfeatfourier-n16" -w
+python main.py --name "tabpfn-mfeatfourier-n16-seed42" --cfg "cfgs/pfn/n16/mfeatfourier.yaml" --seed 42 --group "tabpfn-mfeatfourier-n16" -w
+python main.py --name "tabpfn-mfeatfourier-n16-seed58" --cfg "cfgs/pfn/n16/mfeatfourier.yaml" --seed 58 --group "tabpfn-mfeatfourier-n16" -w
+python main.py --name "tabpfn-mfeatfourier-n16-seed97" --cfg "cfgs/pfn/n16/mfeatfourier.yaml" --seed 97 --group "tabpfn-mfeatfourier-n16" -w
 
-# python main.py --name "tabpfn-higgs-n32-seed14" --cfg "cfgs/pfn/n32/higgs.yaml" --seed 14 --group "tabpfn-higgs-n32" -w
-# python main.py --name "tabpfn-higgs-n32-seed26" --cfg "cfgs/pfn/n32/higgs.yaml" --seed 26 --group "tabpfn-higgs-n32" -w
-# python main.py --name "tabpfn-higgs-n32-seed42" --cfg "cfgs/pfn/n32/higgs.yaml" --seed 42 --group "tabpfn-higgs-n32" -w
-# python main.py --name "tabpfn-higgs-n32-seed58" --cfg "cfgs/pfn/n32/higgs.yaml" --seed 58 --group "tabpfn-higgs-n32" -w
-# python main.py --name "tabpfn-higgs-n32-seed97" --cfg "cfgs/pfn/n32/higgs.yaml" --seed 97 --group "tabpfn-higgs-n32" -w
+# python main.py --name "tabpfn-mfeatfourier-n32-seed14" --cfg "cfgs/pfn/n32/mfeatfourier.yaml" --seed 14 --group "tabpfn-mfeatfourier-n32" -w
+# python main.py --name "tabpfn-mfeatfourier-n32-seed26" --cfg "cfgs/pfn/n32/mfeatfourier.yaml" --seed 26 --group "tabpfn-mfeatfourier-n32" -w
+# python main.py --name "tabpfn-mfeatfourier-n32-seed42" --cfg "cfgs/pfn/n32/mfeatfourier.yaml" --seed 42 --group "tabpfn-mfeatfourier-n32" -w
+# python main.py --name "tabpfn-mfeatfourier-n32-seed58" --cfg "cfgs/pfn/n32/mfeatfourier.yaml" --seed 58 --group "tabpfn-mfeatfourier-n32" -w
+# python main.py --name "tabpfn-mfeatfourier-n32-seed97" --cfg "cfgs/pfn/n32/mfeatfourier.yaml" --seed 97 --group "tabpfn-mfeatfourier-n32" -w
 
-# python main.py --name "tabpfn-higgs-n64-seed14" --cfg "cfgs/pfn/n64/higgs.yaml" --seed 14 --group "tabpfn-higgs-n64" -w
-# python main.py --name "tabpfn-higgs-n64-seed26" --cfg "cfgs/pfn/n64/higgs.yaml" --seed 26 --group "tabpfn-higgs-n64" -w
-# python main.py --name "tabpfn-higgs-n64-seed42" --cfg "cfgs/pfn/n64/higgs.yaml" --seed 42 --group "tabpfn-higgs-n64" -w
-# python main.py --name "tabpfn-higgs-n64-seed58" --cfg "cfgs/pfn/n64/higgs.yaml" --seed 58 --group "tabpfn-higgs-n64" -w
-# python main.py --name "tabpfn-higgs-n64-seed97" --cfg "cfgs/pfn/n64/higgs.yaml" --seed 97 --group "tabpfn-higgs-n64" -w
+# python main.py --name "tabpfn-mfeatfourier-n64-seed14" --cfg "cfgs/pfn/n64/mfeatfourier.yaml" --seed 14 --group "tabpfn-mfeatfourier-n64" -w
+# python main.py --name "tabpfn-mfeatfourier-n64-seed26" --cfg "cfgs/pfn/n64/mfeatfourier.yaml" --seed 26 --group "tabpfn-mfeatfourier-n64" -w
+# python main.py --name "tabpfn-mfeatfourier-n64-seed42" --cfg "cfgs/pfn/n64/mfeatfourier.yaml" --seed 42 --group "tabpfn-mfeatfourier-n64" -w
+# python main.py --name "tabpfn-mfeatfourier-n64-seed58" --cfg "cfgs/pfn/n64/mfeatfourier.yaml" --seed 58 --group "tabpfn-mfeatfourier-n64" -w
+# python main.py --name "tabpfn-mfeatfourier-n64-seed97" --cfg "cfgs/pfn/n64/mfeatfourier.yaml" --seed 97 --group "tabpfn-mfeatfourier-n64" -w
 

@@ -62,6 +62,7 @@ class TabPFNModel(nn.Module):
         outputs = torch.tensor(embeddings, dtype=torch.float32).cuda()
         
         # print(f"devices -- embeds: {embeddings.device}, outputs: {outputs.device}")
+        print(f"##### shapes -- X: {X.shape}, y: {y.shape}, embeds: {embeddings.shape}, outputs: {outputs.shape}")
 
         outputs = self.regressor(outputs)
  
