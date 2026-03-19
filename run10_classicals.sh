@@ -1,8 +1,8 @@
-python classical_models.py --ds-name "higgs" --n-shots 04
-python classical_models.py --ds-name "higgs" --n-shots 08
-python classical_models.py --ds-name "higgs" --n-shots 16
-python classical_models.py --ds-name "higgs" --n-shots 32
-python classical_models.py --ds-name "higgs" --n-shots 64
+python classical_models_multiclass.py --ds-name "vehicle" --n-shots 04 --num-classes 4
+python classical_models_multiclass.py --ds-name "vehicle" --n-shots 08 --num-classes 4
+python classical_models_multiclass.py --ds-name "vehicle" --n-shots 16 --num-classes 4
+python classical_models_multiclass.py --ds-name "vehicle" --n-shots 32 --num-classes 4
+python classical_models_multiclass.py --ds-name "vehicle" --n-shots 64 --num-classes 4
 
 
 # python classical_models.py --ds-name "creditg" --n-shots 04

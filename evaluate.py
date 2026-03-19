@@ -54,58 +54,71 @@ def load_dataset(cfg, test_list, n_shots, n_queries, max_n_features, test_size=1
     return test_ds, train_ds
 
 
-def compute_metrics(model, queries, X, y, post_training: bool, post_training_epochs: int):
-    """Run hyponet forward and compute metrics."""
-    hyponet = dict_to_mlp(weight_dict=model(queries[0]).params, in_dim=X.shape[1]).cuda()
+def compute_metrics(model, queries, X, y, num_classes: int,
+                    post_training: bool, post_training_epochs: int):
+    """Run hyponet forward and compute multiclass metrics."""
+    
+    hyponet = dict_to_mlp(
+        weight_dict=model(queries[0]).params,
+        in_dim=X.shape[1]
+    ).cuda()
 
     if post_training:
-        num_trainable_params = sum(p.numel() for p in hyponet.parameters() if p.requires_grad)
+        num_trainable_params = sum(
+            p.numel() for p in hyponet.parameters() if p.requires_grad
+        )
         print(f'Number of trainable parameters in MLP: {num_trainable_params:,}')
 
-        epochs = post_training_epochs    
-        loss_fn = nn.BCEWithLogitsLoss()
+        epochs = post_training_epochs
+        loss_fn = nn.CrossEntropyLoss()   # ✅ multiclass loss
         opt = optim.Adam(hyponet.parameters(), lr=1e-3)
 
-        best_val_auc = -1.0
+        best_acc = -1.0
         best_epoch = -1
+
         for ep in range(1, epochs + 1):
             hyponet.train()
             for query in queries:
-                xb = query["queries_x"]
-                yb = query["queries_y"].to(torch.float)
+                xb = query["queries_x"].to("cuda")
+                yb = query["queries_y"].long().to("cuda")  # class indices
 
-                xb = xb.to("cuda")
-                yb = yb.to("cuda")
                 opt.zero_grad()
-                logits = hyponet(xb)
-                loss = loss_fn(logits[:,1], yb)
+                logits = hyponet(xb)                      # [B, C]
+                loss = loss_fn(logits, yb)
                 loss.backward()
                 opt.step()
-            # Validate
+
+            # ---------- Validation ----------
             hyponet.eval()
             ys, preds = [], []
+
             with torch.no_grad():
                 for query in queries:
-                    xb = query["queries_x"]
-                    yb = query["queries_y"].to(torch.float)
-                    xb = xb.to("cuda")
+                    xb = query["queries_x"].to("cuda")
+                    yb = query["queries_y"]
+
                     logits = hyponet(xb)
-                    probs = torch.sigmoid(logits).cpu().numpy()
+                    probs = torch.softmax(logits, dim=1).cpu().numpy()
+
                     preds.append(probs)
                     ys.append(yb.numpy())
+
             ys = np.concatenate(ys)
             preds = np.concatenate(preds)
-            val_auc = roc_auc_score(y_true=ys, y_score=preds[:,1])
-            if val_auc > best_val_auc:
-                best_val_auc = val_auc
+
+            y_pred = np.argmax(preds, axis=1)
+            acc = roc_auc_score(ys, preds, multi_class="ovr")
+
+            if acc > best_acc:
+                best_acc = acc
                 best_epoch = ep
-            # print(f"epoch: {ep:>2}, roc_auc: {val_auc:.2}, best epoch: {best_epoch:>2}")
 
-
+    # ---------- Final Evaluation ----------
     hyponet.eval()
-    preds = hyponet.forward(X.unsqueeze(dim=0).cuda())
+    logits = hyponet(X.cuda())                 # [N, C]
+    preds = torch.softmax(logits, dim=1)
     preds = preds.detach().cpu().numpy()
-    preds = np.squeeze(preds)
+
     y_pred = np.argmax(preds, axis=1)
 
     if np.isnan(preds).any() or np.isinf(preds).any():
@@ -113,18 +126,99 @@ def compute_metrics(model, queries, X, y, post_training: bool, post_training_epo
 
     val_counts = pd.Series(y).value_counts()
     const_pred_acc = max(val_counts) / sum(val_counts)
+
     balanced_acc = balanced_accuracy_score(y, y_pred)
     unbalanced_acc = accuracy_score(y, y_pred)
-    f1 = f1_score(y, y_pred)
-    roc_auc = roc_auc_score(y, preds[:, 1])
+    f1 = f1_score(y, y_pred, average="macro")   # macro = class-balanced
+
+    roc_auc = roc_auc_score(
+        y_true=y,
+        y_score=preds,
+        labels=np.arange(num_classes),
+        multi_class="ovr",
+        average="macro"
+    )
 
     return {
         "const_predictor_acc": const_pred_acc,
         "balanced_acc": balanced_acc,
         "unbalanced_acc": unbalanced_acc,
-        "f1_score": f1,
+        "f1_score_macro": f1,
         "roc_auc": roc_auc
     }
+
+
+# def compute_metrics(model, queries, X, y, post_training: bool, post_training_epochs: int):
+#     """Run hyponet forward and compute metrics."""
+#     hyponet = dict_to_mlp(weight_dict=model(queries[0]).params, in_dim=X.shape[1]).cuda()
+
+#     if post_training:
+#         num_trainable_params = sum(p.numel() for p in hyponet.parameters() if p.requires_grad)
+#         print(f'Number of trainable parameters in MLP: {num_trainable_params:,}')
+
+#         epochs = post_training_epochs    
+#         loss_fn = nn.BCEWithLogitsLoss()
+#         opt = optim.Adam(hyponet.parameters(), lr=1e-3)
+
+#         best_val_auc = -1.0
+#         best_epoch = -1
+#         for ep in range(1, epochs + 1):
+#             hyponet.train()
+#             for query in queries:
+#                 xb = query["queries_x"]
+#                 yb = query["queries_y"].to(torch.float)
+
+#                 xb = xb.to("cuda")
+#                 yb = yb.to("cuda")
+#                 opt.zero_grad()
+#                 logits = hyponet(xb)
+#                 loss = loss_fn(logits[:,1], yb)
+#                 loss.backward()
+#                 opt.step()
+#             # Validate
+#             hyponet.eval()
+#             ys, preds = [], []
+#             with torch.no_grad():
+#                 for query in queries:
+#                     xb = query["queries_x"]
+#                     yb = query["queries_y"].to(torch.float)
+#                     xb = xb.to("cuda")
+#                     logits = hyponet(xb)
+#                     probs = torch.sigmoid(logits).cpu().numpy()
+#                     preds.append(probs)
+#                     ys.append(yb.numpy())
+#             ys = np.concatenate(ys)
+#             preds = np.concatenate(preds)
+#             val_auc = roc_auc_score(y_true=ys, y_score=preds[:,1])
+#             if val_auc > best_val_auc:
+#                 best_val_auc = val_auc
+#                 best_epoch = ep
+#             # print(f"epoch: {ep:>2}, roc_auc: {val_auc:.2}, best epoch: {best_epoch:>2}")
+
+
+#     hyponet.eval()
+#     preds = hyponet.forward(X.unsqueeze(dim=0).cuda())
+#     preds = preds.detach().cpu().numpy()
+#     preds = np.squeeze(preds)
+#     y_pred = np.argmax(preds, axis=1)
+
+#     if np.isnan(preds).any() or np.isinf(preds).any():
+#         print("NaNs in preds!", np.isnan(preds).sum())
+
+#     val_counts = pd.Series(y).value_counts()
+#     const_pred_acc = max(val_counts) / sum(val_counts)
+#     balanced_acc = balanced_accuracy_score(y, y_pred)
+#     unbalanced_acc = accuracy_score(y, y_pred)
+#     f1 = f1_score(y, y_pred)
+#     roc_auc = roc_auc_score(y, preds[:, 1])
+
+#     return {
+#         "const_predictor_acc": const_pred_acc,
+#         "balanced_acc": balanced_acc,
+#         "unbalanced_acc": unbalanced_acc,
+#         "f1_score": f1,
+#         "roc_auc": roc_auc
+#     }
 
 
 def compute_avg_metrics(model, cfg, ds_name, n_shots, n_queries, n_samples, max_n_features, post_training, post_training_epochs):
@@ -146,7 +240,8 @@ def compute_avg_metrics(model, cfg, ds_name, n_shots, n_queries, n_samples, max_
         metrics = compute_metrics(model=model, 
                                   queries=train_ds, 
                                   X=X, 
-                                  y=y, 
+                                  y=y,
+                                  num_classes=cfg.hyponet.out_dim, 
                                   post_training=post_training, 
                                   post_training_epochs=post_training_epochs)
         for key, val in metrics.items():
@@ -183,7 +278,7 @@ def evaluate_checkpoint(checkpoint_path, post_training, post_training_epochs, de
     ds_name = cfg.datasets.list_combine_train[0]
     max_n_features = cfg.hyponet.in_dim
     n_samples = 1
-    n_queries_dict = {"bank": 43211, "blood": 374, "calhousing": 19640, "car": 864, "creditg": 500, "diabetes": 384, "heart": 459, "higgs": 96049, "income": 44222, "incomemix": 44222, "jungle": 42819}
+    n_queries_dict = {"bank": 43211, "blood": 374, "calhousing": 19640, "car": 864, "creditg": 500, "diabetes": 384, "heart": 459, "higgs": 96049, "income": 44222, "incomemix": 44222, "jungle": 42819, "mfeatfourier": 1000, "vehicle": 423}
     n_queries = n_queries_dict[ds_name]
     n_shots = total_training_set_size
 

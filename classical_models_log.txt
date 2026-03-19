@@ -1,0 +1,8 @@
+Import failed: lightgbm
+Import failed: xgboost
+Test set size: 423
+
+=== Running seed 14 ===
+Tuning Logistic Regression...
+/afs/glue.umd.edu/home/glue/p/a/pasand/home/miniconda3/envs/transhyper4openml/lib/python3.10/site-packages/sklearn/linear_model/_logistic.py:1256: FutureWarning: 'multi_class' was deprecated in version 1.5 and will be removed in 1.7. Use OneVsRestClassifier(LogisticRegression(..)) instead. Leave it to its default value to avoid this warning.
+  warnings.warn(
